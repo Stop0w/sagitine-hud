@@ -10,7 +10,7 @@ interface HubHeaderProps {
 
 export function HubHeader({ currentView, onClose }: HubHeaderProps) {
   return (
-    <header className="flex justify-between items-center w-full px-4 h-14 bg-zinc-50 border-b border-outline-variant">
+    <header className="flex justify-between items-center w-full px-4 h-14 bg-surface-container-highest border-b border-outline-variant">
       <div className="flex flex-col justify-center">
         <span className="font-serif italic text-xl text-zinc-900">
           Sagitine CX
@@ -25,10 +25,10 @@ export function HubHeader({ currentView, onClose }: HubHeaderProps) {
       <button
         data-close-button
         onClick={onClose}
-        className="text-zinc-500 hover:bg-zinc-200 p-1 transition-all active:opacity-80"
+        className="text-zinc-500 hover:bg-surface-container-low p-1 transition-all active:opacity-80"
         aria-label="Close notifications hub"
       >
-        <X style={{ fontSize: '1.125rem' }} />
+        <X size={18} />
       </button>
     </header>
   );
