@@ -2,7 +2,6 @@
 
 import { ChevronRight } from "lucide-react";
 import type { UrgencyLevel } from "../types";
-import { getUrgencyColor } from "../utils/formatters";
 
 interface CategoryItemProps {
   id: string;
@@ -21,43 +20,34 @@ export function CategoryItem({
   hasNew = false,
   onClick
 }: CategoryItemProps) {
+  const urgencyColor = urgency === "high" ? "border-tertiary" :
+                       urgency === "medium" ? "border-secondary" :
+                       "border-transparent";
+
   return (
     <button
       onClick={() => onClick?.(id)}
-      className="group flex items-center justify-between p-4 bg-surface-container-low hover:bg-surface-container-high transition-colors cursor-pointer border-l-4 w-full text-left"
-      style={{
-        borderColor: urgency === "high" ? "rgb(172, 52, 21)" :
-                   urgency === "medium" ? "rgb(93, 94, 102)" :
-                   "transparent"
-      }}
+      aria-label={`${label}: ${count} items`}
+      className={`group flex items-center justify-between p-4 bg-surface-container-low hover:bg-surface-container-high transition-colors cursor-pointer border-l-4 w-full text-left ${urgencyColor}`}
     >
       <div className="flex flex-col gap-1 flex-1">
-        <span
-          className="font-sans text-sm font-medium text-on-surface"
-          style={{ fontFamily: 'Inter, sans-serif' }}
-        >
+        <span className="font-sans text-sm font-medium text-on-surface">
           {label}
         </span>
-        {hasNew && (
+        {hasNew && urgency === "high" && (
           <div className="flex items-center gap-2">
-            <span
-              className="font-sans text-[10px] tracking-wider text-tertiary font-bold uppercase"
-              style={{ fontSize: '0.625rem' }}
-            >
-              {urgency === "high" && "1 Urgent Action"}
+            <span className="font-sans text-[10px] tracking-wider text-tertiary font-bold uppercase">
+              {count} Urgent Action{count > 1 ? 's' : ''}
             </span>
           </div>
         )}
       </div>
 
       <div className="flex items-center gap-3">
-        <span
-          className="font-serif italic text-2xl text-on-surface"
-          style={{ fontFamily: 'Noto Serif, serif' }}
-        >
+        <span className="font-serif italic text-2xl text-on-surface">
           {count}
         </span>
-        <ChevronRight className="text-outline group-hover:text-primary transition-colors" style={{ fontSize: '1rem' }} />
+        <ChevronRight className="text-outline group-hover:text-primary transition-colors" />
       </div>
     </button>
   );
