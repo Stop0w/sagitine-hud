@@ -2,6 +2,10 @@
 
 export type HubView = "LEVEL_1_HUB" | "LEVEL_2_QUEUE" | "LEVEL_3_CONSOLE";
 
+export const LEVEL_1_HUB: HubView = "LEVEL_1_HUB";
+export const LEVEL_2_QUEUE: HubView = "LEVEL_2_QUEUE";
+export const LEVEL_3_CONSOLE: HubView = "LEVEL_3_CONSOLE";
+
 export type UrgencyLevel = "low" | "medium" | "high";
 export type RiskLevel = "low" | "medium" | "high";
 export type CriticalityLevel = "NOMINAL" | "ELEVATED" | "CRITICAL";

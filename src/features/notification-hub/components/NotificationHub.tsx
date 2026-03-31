@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { HubView } from '../types';
+import type { HubView, CategorySummaryItem, HubMetrics } from '../types';
 import { HubHeader } from './HubHeader';
 import { CategoryList } from './CategoryList';
 import { MetricsCard } from './MetricsCard';
@@ -19,24 +19,6 @@ interface NotificationHubProps {
   pillRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
-interface CategorySummaryItem {
-  id: string;
-  label: string;
-  shortLabel: string;
-  count: number;
-  urgency: 'low' | 'medium' | 'high';
-  hasNew: boolean;
-  avgConfidence: number;
-  avgAgeMinutes: number;
-}
-
-interface HubMetrics {
-  totalOpen: number;
-  urgentCount: number;
-  reviewCount: number;
-  avgResponseTimeMinutes: number;
-  avgConfidence: number;
-}
 
 export const NotificationHub: React.FC<NotificationHubProps> = ({
   isOpen,
@@ -189,14 +171,15 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
                   {/* Right column */}
                   <div className="w-3/5 h-full overflow-hidden">
                     <TicketQueue
-                      tickets={hubData?.tickets || []}
-                      selectedTicket={hubData?.selected_ticket}
+                      tickets={[]}
+                      selectedTicket={undefined}
                       loading={false}
                       onTicketSelect={(ticket) => {
-                        updateLocalState({ selected_ticket: ticket });
-                        handleTicketSelect();
+                        console.log('Ticket selected:', ticket);
                       }}
-                      onTicketAction={(ticketId, action) => handleTicketAction(ticketId, action)}
+                      onTicketAction={(ticketId, action) => {
+                        console.log(`Ticket action: ${ticketId}, ${action}`);
+                      }}
                     />
                   </div>
                 </motion.div>
