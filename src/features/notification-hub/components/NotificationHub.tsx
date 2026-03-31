@@ -133,11 +133,7 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
           {/* Hub Header */}
           <HubHeader
             currentView={currentView}
-            onNavigate={onNavigate}
-            onBackToHub={() => onNavigate(LEVEL_1_HUB)}
-            ticketCount={metrics.totalOpen || 0}
-            urgentCount={metrics.urgentCount || 0}
-            sentToday={0}
+            onClose={onClose}
           />
 
           {/* Main content area */}
@@ -154,33 +150,16 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
                 >
                   {/* Left column */}
                   <div className="w-2/5 h-full border-r border-gray-100 overflow-hidden">
-                    <MetricsCard
-                      title="Queue Overview"
-                      value={metrics.totalOpen || 0}
-                      change="+12"
-                      changeType="positive"
-                      icon="📊"
-                    />
+                    <MetricsCard metrics={metrics} />
                     <CategoryList
-                      categories={categories}
-                      selectedCategory={undefined}
-                      onCategorySelect={(categoryId) => onNavigate(LEVEL_2_QUEUE, { categoryId })}
+                      items={categories}
+                      onCategoryClick={(id) => onNavigate(LEVEL_2_QUEUE, { categoryId: id })}
                     />
                   </div>
 
                   {/* Right column */}
                   <div className="w-3/5 h-full overflow-hidden">
-                    <TicketQueue
-                      tickets={[]}
-                      selectedTicket={undefined}
-                      loading={false}
-                      onTicketSelect={(ticket) => {
-                        console.log('Ticket selected:', ticket);
-                      }}
-                      onTicketAction={(ticketId, action) => {
-                        console.log(`Ticket action: ${ticketId}, ${action}`);
-                      }}
-                    />
+                    <TicketQueue />
                   </div>
                 </motion.div>
               )}
@@ -194,17 +173,7 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
                   transition={{ duration: 0.3, ease: 'easeOut' }}
                   className="h-full"
                 >
-                  <TicketQueue
-                    tickets={[]}
-                    selectedTicket={undefined}
-                    loading={false}
-                    onTicketSelect={(ticket) => {
-                      onNavigate(LEVEL_3_CONSOLE, { ticketId: ticket.id });
-                    }}
-                    onTicketAction={(ticketId, action) => {
-                      console.log(`Ticket action: ${ticketId}, ${action}`);
-                    }}
-                  />
+                  <TicketQueue />
                 </motion.div>
               )}
 
@@ -217,11 +186,7 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
                   transition={{ duration: 0.3, ease: 'easeOut' }}
                   className="h-full"
                 >
-                  <ResolutionConsole
-                    ticket={undefined}
-                    onClose={() => onNavigate(LEVEL_1_HUB)}
-                    onSave={(data) => console.log('Resolution data saved:', data)}
-                  />
+                  <ResolutionConsole />
                 </motion.div>
               )}
             </AnimatePresence>
