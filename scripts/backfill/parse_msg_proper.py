@@ -151,31 +151,39 @@ def parse_msg_file(msg_path: Path) -> Dict[str, Any]:
         result['subject'] = msg.subject or '(No Subject)'
 
         # Extract sender (from - should be Sagitine email for sent items)
-        if msg.sender:
-            # Sender might be string or object
-            if isinstance(msg.sender, str):
-                result['sender_name'] = msg.sender
-                result['sender_email'] = msg.sender
-            elif hasattr(msg.sender, 'name'):
-                result['sender_name'] = msg.sender.name or ''
-                result['sender_email'] = msg.sender.email_address or ''
-            else:
-                result['sender_name'] = str(msg.sender)
-                result['sender_email'] = str(msg.sender)
+        try:
+            if msg.sender:
+                # Sender might be string or object
+                if isinstance(msg.sender, str):
+                    result['sender_name'] = msg.sender
+                    result['sender_email'] = msg.sender
+                elif hasattr(msg.sender, 'name'):
+                    result['sender_name'] = msg.sender.name or ''
+                    result['sender_email'] = msg.sender.email_address or ''
+                else:
+                    result['sender_name'] = str(msg.sender)
+                    result['sender_email'] = str(msg.sender)
+        except Exception as e:
+            result['sender_name'] = ''
+            result['sender_email'] = ''
 
         # Extract recipient (to - should be customer for sent items)
-        if msg.to and len(msg.to) > 0:
-            recipient = msg.to[0]
-            # Recipient might be string or object
-            if isinstance(recipient, str):
-                result['recipient_name'] = recipient
-                result['recipient_email'] = recipient
-            elif hasattr(recipient, 'name'):
-                result['recipient_name'] = recipient.name or ''
-                result['recipient_email'] = recipient.email_address or ''
-            else:
-                result['recipient_name'] = str(recipient)
-                result['recipient_email'] = str(recipient)
+        try:
+            if msg.to and len(msg.to) > 0:
+                recipient = msg.to[0]
+                # Recipient might be string or object
+                if isinstance(recipient, str):
+                    result['recipient_name'] = recipient
+                    result['recipient_email'] = recipient
+                elif hasattr(recipient, 'name'):
+                    result['recipient_name'] = recipient.name or ''
+                    result['recipient_email'] = recipient.email_address or ''
+                else:
+                    result['recipient_name'] = str(recipient)
+                    result['recipient_email'] = str(recipient)
+        except Exception as e:
+            result['recipient_name'] = ''
+            result['recipient_email'] = ''
 
         # Extract date sent
         if msg.date:
