@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased bg-surface text-on-surface;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* Custom design tokens for Sagitine */
+:root {
+  --surface: 249 249 249;      /* #f9f9f9 */
+  --surface-container-lowest: 255 255 255;  /* #ffffff */
+  --surface-container-low: 243 243 243;    /* #f3f3f3 */
+  --surface-container: 238 238 238;        /* #eeeeee */
+  --surface-container-high: 232 232 232;   /* #e8e8e8 */
+  --surface-dim: 218 218 218;               /* #dadada */
+
+  --on-surface: 26 26 26;      /* #1a1a1a */
+  --on-surface-variant: 71 71 71;  /* #474747 */
+
+  --outline: 119 119 119;       /* #777777 */
+  --outline-variant: 198 198 198;  /* #c6c6c6 */
+
+  --primary: 0 0 0;             /* #000000 */
+  --primary-container: 59 59 62; /* #3b3b3e */
+  --on-primary: 228 225 230;    /* #e4e1e6 */
+
+  --secondary: 93 94 102;       /* #5d5e66 */
+  --tertiary: 112 31 0;         /* #701f00 */
+  --tertiary-container: 204 72 21; /* #cc4815 */
+
+  --error: 186 26 26;           /* #ba1a1a */
+}
+
+/* Utility classes */
+.font-serif {
+  font-family: 'Noto Serif', serif;
+}
+
+.font-sans {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c6c6c6;
+  border-radius: 2px;
+}
