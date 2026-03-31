@@ -73,7 +73,7 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-end justify-end p-6"
+          className="fixed inset-0 z-50 flex items-end justify-end p-6 bg-black/20 backdrop-blur-[2px]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
