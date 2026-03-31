@@ -183,7 +183,7 @@ def print_progress(current: int, total: int, prefix: str = "") -> None:
     percent = (current / total) * 100 if total > 0 else 0
     bar_length = 40
     filled = int(bar_length * current / total) if total > 0 else 0
-    bar = '█' * filled + '░' * (bar_length - filled)
+    bar = '#' * filled + '-' * (bar_length - filled)
 
     print(f'\r{prefix} [{bar}] {percent:.1f}% ({current}/{total})', end='', flush=True)
 

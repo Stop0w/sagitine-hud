@@ -1,0 +1,10 @@
+# Python dependencies for Sagitine Backfill Pipeline (FALLBACK)
+
+# Use olefile-based parsing (most widely available)
+olefile>=0.46
+
+# Date parsing
+python-dateutil>=2.8.0
+
+# Optional: LLM Classification (uncomment to enable)
+# anthropic>=0.18.0

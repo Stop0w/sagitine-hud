@@ -94,6 +94,6 @@ AVOID_PHRASES = [
 for dir_path in [RAW_PARSED_DIR, CLEANED_DIR, CLASSIFIED_DIR, FILTERED_DIR, KNOWLEDGE_DIR]:
     dir_path.mkdir(parents=True, exist_ok=True)
 
-print(f"✅ Configuration loaded")
+print(f"[OK] Configuration loaded")
 print(f"   Raw data: {RAW_DATA_DIR}")
 print(f"   Output root: {DATA_DIR}")
