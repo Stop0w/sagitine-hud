@@ -19,7 +19,7 @@ export const NotificationPill = forwardRef<HTMLButtonElement, NotificationPillPr
         onClick={onClick}
         aria-label={`Open notifications hub (${count} items)`}
         aria-expanded={isOpen}
-        className="fixed bottom-10 right-10 z-40 bg-surface-container-lowest border border-outline-variant rounded-none px-6 py-3 flex items-center gap-4 shadow-[0_32px_64px_-12px_rgba(95,94,97,0.08)] hover:shadow-[0_32px_64px_-12px_rgba(95,94,97,0.15)] transition-all duration-300 active:scale-[0.98] group"
+        className="fixed bottom-10 right-10 z-40 bg-surface-container-lowest border border-outline-variant rounded-[3rem] px-6 py-3 flex items-center gap-4 shadow-[0_32px_64px_-12px_rgba(95,94,97,0.08)] hover:shadow-[0_32px_64px_-12px_rgba(95,94,97,0.15)] transition-all duration-300 active:scale-[0.98] group"
         style={{
           fontFamily: 'Inter, sans-serif',
           letterSpacing: '0.05em',

@@ -27,15 +27,6 @@ export default {
         "tertiary-container": "rgb(var(--tertiary-container) / <alpha-value>)",
         error: "rgb(var(--error) / <alpha-value>)",
       },
-      borderRadius: {
-        // Override defaults for sharp corners
-        DEFAULT: "0px",
-        lg: "0px",
-        xl: "0px",
-        "2xl": "0px",
-        "3xl": "0px",
-        full: "0px",
-      },
       fontFamily: {
         serif: ["Noto Serif", "serif"],
         sans: ["Inter", "sans-serif"],
