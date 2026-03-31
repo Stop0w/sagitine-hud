@@ -16,7 +16,7 @@ export const mockHubData: HubData = {
   categories: [
     {
       id: "damaged_missing_faulty",
-      label: "Damaged/Missing/Faulty",
+      label: "Damaged & Faulty",
       shortLabel: "Damaged",
       count: 2,
       urgency: "high",
@@ -26,7 +26,7 @@ export const mockHubData: HubData = {
     },
     {
       id: "shipping_delivery",
-      label: "Shipping/Delivery",
+      label: "Shipping & Delivery",
       shortLabel: "Shipping",
       count: 5,
       urgency: "medium",
@@ -35,8 +35,8 @@ export const mockHubData: HubData = {
       avgAgeMinutes: 78,
     },
     {
-      id: "product_usage",
-      label: "Product Usage",
+      id: "general_inquiries",
+      label: "General Inquiries",
       shortLabel: "General",
       count: 5,
       urgency: "low",
@@ -156,7 +156,7 @@ export const mockHubData: HubData = {
         status: "drafted",
       },
     ],
-    "product_usage": [
+    "general_inquiries": [
       {
         id: "003",
         emailId: "email-003",
