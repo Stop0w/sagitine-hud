@@ -1,6 +1,5 @@
 // src/features/notification-hub/components/CategoryItem.tsx
 
-import { ChevronRight } from "lucide-react";
 import type { UrgencyLevel } from "../types";
 
 interface CategoryItemProps {
@@ -20,34 +19,50 @@ export function CategoryItem({
   hasNew = false,
   onClick
 }: CategoryItemProps) {
-  const urgencyColor = urgency === "high" ? "border-tertiary" :
-                       urgency === "medium" ? "border-secondary" :
-                       "border-transparent";
+  const isHighUrgency = urgency === "high";
+
+  const bgClass = isHighUrgency
+    ? "bg-surface-container-low hover:bg-surface-container-high"
+    : "bg-surface hover:bg-surface-container-low";
+
+  const borderClass = isHighUrgency ? "border-l-4 border-tertiary" : "";
+
+  const countColor = isHighUrgency ? "text-on-surface" : "text-zinc-400";
+
+  const dotColor = isHighUrgency ? "bg-tertiary" : "bg-transparent";
+
+  const getSubtitle = () => {
+    if (isHighUrgency) {
+      return `${count} Urgent Action${count > 1 ? 's' : ''}`;
+    }
+    if (urgency === "medium") {
+      return "Awaiting Carrier Sync";
+    }
+    return "Standard Priority";
+  };
+
+  const subtitleColor = isHighUrgency ? "text-tertiary" : "text-zinc-400";
 
   return (
     <button
       onClick={() => onClick?.(id)}
       aria-label={`${label}: ${count} items`}
-      className={`group flex items-center justify-between p-4 bg-surface-container-low hover:bg-surface-container-high transition-colors cursor-pointer border-l-4 w-full text-left ${urgencyColor}`}
+      className={`group flex items-center justify-between p-4 ${bgClass} transition-colors cursor-pointer ${borderClass} w-full text-left`}
     >
-      <div className="flex flex-col gap-1 flex-1">
-        <span className="font-sans text-sm font-medium text-on-surface">
+      <div className="flex flex-col gap-1">
+        <span className="font-body text-sm font-medium text-on-surface">
           {label}
         </span>
-        {hasNew && urgency === "high" && (
-          <div className="flex items-center gap-2">
-            <span className="font-sans text-[10px] tracking-wider text-tertiary font-bold uppercase">
-              {count} Urgent Action{count > 1 ? 's' : ''}
-            </span>
-          </div>
-        )}
+        <span className={`font-label text-[10px] tracking-wider ${subtitleColor} font-bold uppercase`}>
+          {getSubtitle()}
+        </span>
       </div>
 
       <div className="flex items-center gap-3">
-        <span className="font-serif italic text-2xl text-on-surface">
+        <span className={`font-headline italic text-2xl ${countColor}`}>
           {count}
         </span>
-        <ChevronRight className="text-outline group-hover:text-primary transition-colors" />
+        <div className={`w-2 h-2 ${dotColor}`}></div>
       </div>
     </button>
   );

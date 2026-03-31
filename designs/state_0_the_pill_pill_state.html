@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-fixed-dim": "#47464a",
+              "on-tertiary-container": "#ffffff",
+              "secondary": "#5d5e66",
+              "on-tertiary-fixed": "#ffffff",
+              "on-secondary": "#ffffff",
+              "surface-tint": "#5f5e61",
+              "on-surface-variant": "#474747",
+              "surface-container": "#eeeeee",
+              "secondary-fixed": "#c6c5cf",
+              "tertiary-fixed": "#ac3400",
+              "outline": "#777777",
+              "on-error-container": "#410002",
+              "surface-container-highest": "#e2e2e2",
+              "surface-container-low": "#f3f3f3",
+              "on-background": "#1a1c1c",
+              "on-tertiary": "#ffdbd0",
+              "tertiary-container": "#cc4815",
+              "on-primary-container": "#ffffff",
+              "tertiary": "#701f00",
+              "primary": "#000000",
+              "on-secondary-container": "#1a1b22",
+              "inverse-surface": "#2f3131",
+              "primary-fixed": "#5f5e61",
+              "primary-container": "#3b3b3e",
+              "on-primary": "#e4e1e6",
+              "surface-bright": "#f9f9f9",
+              "surface": "#f9f9f9",
+              "on-secondary-fixed": "#1a1b22",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-high": "#e8e8e8",
+              "secondary-fixed-dim": "#abaab4",
+              "tertiary-fixed-dim": "#832600",
+              "on-primary-fixed": "#ffffff",
+              "inverse-primary": "#c8c5ca",
+              "error-container": "#ffdad6",
+              "on-primary-fixed-variant": "#e4e1e6",
+              "on-secondary-fixed-variant": "#3a3b43",
+              "secondary-container": "#d4d3dd",
+              "surface-dim": "#dadada",
+              "outline-variant": "#c6c6c6",
+              "on-surface": "#1a1c1c",
+              "inverse-on-surface": "#f0f1f1",
+              "on-tertiary-fixed-variant": "#ffdbd0",
+              "error": "#ba1a1a",
+              "on-error": "#ffffff",
+              "surface-variant": "#e2e2e2",
+              "background": "#f9f9f9"
+            },
+            fontFamily: {
+              "headline": ["Noto Serif"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'WHT' 300;
+            font-size: 18px;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<!-- TopAppBar from JSON -->
+<header class="flex justify-between items-center w-full px-4 h-14 bg-zinc-50 dark:bg-zinc-950 fixed top-0 z-50">
+<div class="flex items-center gap-6">
+<span class="font-serif italic text-xl text-zinc-900 dark:text-zinc-50">Sagitine CX</span>
+<nav class="hidden md:flex gap-4">
+<button class="text-zinc-500 dark:text-zinc-400 font-sans text-[11px] uppercase tracking-widest font-medium hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors px-2 py-1">Back</button>
+</nav>
+</div>
+<div class="flex items-center gap-2">
+<button class="scale-95 active:opacity-80 transition-all p-2 text-zinc-900 dark:text-zinc-100">
+<span class="material-symbols-outlined" data-icon="minimize">minimize</span>
+</button>
+<button class="scale-95 active:opacity-80 transition-all p-2 text-zinc-900 dark:text-zinc-100">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+</header>
+<!-- Main Workspace Canvas -->
+<main class="flex-grow pt-14 pb-20 px-6 max-w-7xl mx-auto w-full grid grid-cols-12 gap-8">
+<!-- Clinical Header Section -->
+<section class="col-span-12 mt-12 mb-8">
+<div class="flex flex-col gap-1">
+<span class="font-sans text-[10px] tracking-[0.2em] uppercase text-outline">System Overview / Active Node</span>
+<h1 class="font-serif text-6xl tracking-tighter text-primary">Workspace Alpha</h1>
+</div>
+</section>
+<!-- Bento Grid Layout -->
+<div class="col-span-12 md:col-span-8 space-y-8">
+<!-- Hero Data Module -->
+<div class="bg-surface-container-low p-8 relative overflow-hidden border-l-4 border-primary">
+<div class="flex flex-col gap-6 relative z-10">
+<div class="flex justify-between items-start">
+<div class="space-y-1">
+<span class="font-sans text-[11px] uppercase tracking-widest font-medium text-outline">Project Velocity</span>
+<div class="text-4xl font-headline italic">98.4% Efficiency</div>
+</div>
+<span class="material-symbols-outlined text-primary" data-icon="insights">insights</span>
+</div>
+<div class="h-[200px] bg-surface-container-high w-full relative">
+<div class="absolute inset-0 opacity-10 bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px]"></div>
+<div class="p-4 flex items-end h-full gap-2">
+<div class="w-1/6 bg-primary h-24"></div>
+<div class="w-1/6 bg-primary h-32"></div>
+<div class="w-1/6 bg-primary h-20"></div>
+<div class="w-1/6 bg-primary h-40"></div>
+<div class="w-1/6 bg-primary h-48"></div>
+<div class="w-1/6 bg-primary h-36"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Double Data Blocks -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="bg-surface-container p-6">
+<span class="font-sans text-[11px] uppercase tracking-widest font-medium text-outline block mb-4">Archives</span>
+<div class="space-y-4">
+<div class="flex justify-between items-center py-2 border-b border-outline-variant">
+<span class="font-sans text-sm">L-092 Protocol</span>
+<span class="font-sans text-[10px] font-bold">SECURED</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant">
+<span class="font-sans text-sm">X-Field Data</span>
+<span class="font-sans text-[10px] font-bold">STABLE</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant">
+<span class="font-sans text-sm">Redaction Logs</span>
+<span class="font-sans text-[10px] font-bold text-tertiary">ACTION REQUIRED</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-highest p-6">
+<span class="font-sans text-[11px] uppercase tracking-widest font-medium text-primary block mb-4">Command Stream</span>
+<div class="text-sm font-body leading-relaxed text-on-surface-variant">
+                        Initializing secure uplink to Sagitine Core. All telemetry synchronized. Awaiting clinical validation of Archive Batch 402. No anomalies detected in the last 24 cycles.
+                    </div>
+</div>
+</div>
+</div>
+<!-- Secondary Column / Sidebar -->
+<aside class="col-span-12 md:col-span-4 space-y-8">
+<div class="bg-surface-container-low p-6">
+<h3 class="font-serif text-2xl mb-6">Metadata Index</h3>
+<div class="space-y-6">
+<div>
+<span class="font-sans text-[10px] tracking-[0.05em] uppercase text-outline block">Origin</span>
+<div class="text-sm font-medium">NEO-TOKYO SECTOR 7</div>
+</div>
+<div>
+<span class="font-sans text-[10px] tracking-[0.05em] uppercase text-outline block">Timestamp</span>
+<div class="text-sm font-medium">2024.05.21 // 14:02:44</div>
+</div>
+<div>
+<span class="font-sans text-[10px] tracking-[0.05em] uppercase text-outline block">Authority</span>
+<div class="text-sm font-medium">LEVEL 5 CLEARANCE</div>
+</div>
+</div>
+</div>
+<div class="relative group cursor-pointer overflow-hidden aspect-[4/3] bg-primary">
+<img class="w-full h-full object-cover opacity-80 mix-blend-luminosity hover:scale-105 transition-transform duration-700" data-alt="Dark dramatic close-up of a high-tech obsidian mechanical part with sharp edges and subtle metallic glints" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMA-fXlEvOcChk9i8Vo0v2TtEB-kVAd0WghVk5OObG4JvErl6EmaCx46DkUYS0_MYjS5sxHwcI8g44KyW_-KWSm4IjNIOR39PsFcZHRRCThCwECIBIx9ORO3fM-4Errwexh2T5f3Ze0u_1GB8BZYZR_t8Jr2CXImpOR2ngSU9aaJfVliUPciC5_2d_iX-wGOdclSdRd5du2U1y1QfmKD6WwKVIAG2hWHUVd71xrmFiDQzeL7gx-zkA0cxNGWW3NPQEEXQT7lEMj5OO"/>
+<div class="absolute bottom-0 left-0 p-4 w-full bg-gradient-to-t from-primary to-transparent">
+<span class="font-sans text-[9px] uppercase tracking-[0.3em] text-white">System Archetype</span>
+</div>
+</div>
+</aside>
+</main>
+<!-- Footer from JSON -->
+<footer class="fixed bottom-0 w-full flex flex-col gap-4 p-6 bg-zinc-50 dark:bg-zinc-950 z-40">
+<div class="flex justify-between items-center">
+<span class="font-sans text-[10px] tracking-[0.05em] uppercase text-zinc-500">© SAGITINE HUD</span>
+<div class="flex gap-6">
+<a class="font-sans text-[10px] tracking-[0.05em] uppercase text-zinc-500 hover:text-zinc-900 transition-colors" href="#">Support</a>
+<a class="font-sans text-[10px] tracking-[0.05em] uppercase text-zinc-500 hover:text-zinc-900 transition-colors" href="#">Privacy</a>
+<a class="font-sans text-[10px] tracking-[0.05em] uppercase text-zinc-500 hover:text-zinc-900 transition-colors" href="#">Terms</a>
+</div>
+</div>
+</footer>
+<!-- STATE 0: THE PERSISTENT PILL -->
+<div class="fixed bottom-10 right-10 z-[100] group">
+<button class="bg-surface-container-lowest border border-outline-variant rounded-full px-6 py-3 flex items-center gap-4 shadow-[0_32px_64px_-12px_rgba(95,94,97,0.08)] hover:shadow-[0_32px_64px_-12px_rgba(95,94,97,0.15)] transition-all duration-300 active:scale-95">
+<!-- Brand Mark -->
+<div class="flex items-center gap-2 border-r border-outline-variant pr-4">
+<span class="font-serif italic text-lg text-primary tracking-tighter">S</span>
+<div class="w-1 h-1 bg-tertiary rounded-full animate-pulse"></div>
+</div>
+<!-- Status Text -->
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5">
+<span class="font-sans text-[11px] font-bold text-tertiary">3 Urgent</span>
+<div class="w-1.5 h-1.5 bg-tertiary rounded-full"></div>
+</div>
+<div class="h-3 w-[1px] bg-outline-variant"></div>
+<div class="flex items-center gap-1.5">
+<span class="font-sans text-[11px] font-medium text-outline">12 Pending</span>
+</div>
+</div>
+<!-- Trigger Icon -->
+<div class="ml-2 flex items-center justify-center bg-primary rounded-full p-1.5 group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-white !text-[14px]" data-icon="terminal">terminal</span>
+</div>
+</button>
+</div>
+</body></html>

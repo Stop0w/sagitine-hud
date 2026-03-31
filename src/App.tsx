@@ -38,7 +38,7 @@ function App() {
       <NotificationPill
         ref={pillRef}
         count={mockHubData.metrics.totalOpen}
-        hasUrgent={mockHubData.metrics.urgentCount > 0}
+        urgentCount={mockHubData.metrics.urgentCount}
         onClick={() => setIsHubOpen(true)}
         isOpen={isHubOpen}
       />

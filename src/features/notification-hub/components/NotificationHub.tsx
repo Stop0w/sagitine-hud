@@ -70,144 +70,93 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
   if (!isOpen) return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={handleBackdropClick}
-      ref={hubRef}
-    >
-      {/* Backdrop */}
-      <motion.div
-        className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-[2px]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-      />
-
-      {/* Main hub container */}
-      <motion.div
-        className="relative w-full max-w-7xl h-[90vh] max-h-[900px] bg-white rounded-[3rem] shadow-2xl overflow-hidden"
-        initial={{
-          opacity: 0,
-          scale: 0.8,
-          y: 50,
-          filter: 'blur(20px)',
-          boxShadow: '0 0 0 rgba(0,0,0,0)'
-        }}
-        animate={{
-          opacity: 1,
-          scale: 1,
-          y: 0,
-          filter: 'blur(0px)',
-          boxShadow: '0 50px 100px -20px rgba(0,0,0,0.25), 0 30px 60px -30px rgba(0,0,0,0.1)'
-        }}
-        exit={{
-          opacity: 0,
-          scale: 0.8,
-          y: 50,
-          filter: 'blur(20px)',
-          boxShadow: '0 0 0 rgba(0,0,0,0)'
-        }}
-        transition={{
-          type: 'spring',
-          stiffness: 300,
-          damping: 30,
-          mass: 0.8,
-          duration: 0.4
-        }}
-      >
-        {/* Close button */}
-        <button
-          ref={closeRef}
-          onClick={onClose}
-          className="absolute top-6 right-6 z-20 p-3 rounded-full bg-white/80 backdrop-blur-sm border border-white/20 shadow-lg hover:bg-white transition-all duration-200 w-12 h-12 flex items-center justify-center"
-          aria-label="Close notification hub"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-end justify-end p-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={handleBackdropClick}
+          ref={hubRef}
         >
-          <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
-        {/* Hub content */}
-        <div className="h-full flex flex-col">
-          {/* Hub Header */}
-          <HubHeader
-            currentView={currentView}
-            onClose={onClose}
-          />
-
-          {/* Main content area */}
-          <div className="flex-1 overflow-hidden">
-            <AnimatePresence mode="wait">
-              {currentView === LEVEL_1_HUB && (
-                <motion.div
-                  key="level1"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className="h-full flex"
-                >
-                  {/* Left column */}
-                  <div className="w-2/5 h-full border-r border-gray-100 overflow-hidden">
-                    <MetricsCard metrics={metrics} />
-                    <CategoryList
-                      items={categories}
-                      onCategoryClick={(id) => onNavigate(LEVEL_2_QUEUE, { categoryId: id })}
-                    />
-                  </div>
-
-                  {/* Right column */}
-                  <div className="w-3/5 h-full overflow-hidden">
-                    <TicketQueue />
-                  </div>
-                </motion.div>
-              )}
-
-              {currentView === LEVEL_2_QUEUE && (
-                <motion.div
-                  key="level2"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className="h-full"
-                >
-                  <TicketQueue />
-                </motion.div>
-              )}
-
-              {currentView === LEVEL_3_CONSOLE && (
-                <motion.div
-                  key="level3"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className="h-full"
-                >
-                  <ResolutionConsole />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Scroll indicator */}
-        {currentView === LEVEL_1_HUB && (
+          {/* THE HUB: SLIDE-UP WINDOW */}
           <motion.div
-            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-white/20 shadow-lg"
-            initial={{ opacity: 0, y: 10 }}
+            className="w-[400px] h-[600px] bg-surface flex flex-col shadow-[0_32px_64px_rgba(0,0,0,0.1)] border border-outline-variant relative"
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.3 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            {/* STATUS RIBBON */}
+            <div className="absolute left-0 top-14 bottom-0 w-1 bg-zinc-200" />
+
+            {/* HEADER */}
+            <header className="flex justify-between items-center w-full px-4 h-14 bg-zinc-50 border-b border-outline-variant">
+              <div className="flex items-center gap-2">
+                <span className="font-serif italic text-xl text-zinc-900">Sagitine CX</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  ref={closeRef}
+                  onClick={onClose}
+                  className="text-zinc-500 hover:bg-zinc-200 p-1 transition-all active:opacity-80"
+                  aria-label="Minimize"
+                >
+                  <span className="material-symbols-outlined !text-[18px]" data-icon="minimize">minimize</span>
+                </button>
+                <button
+                  onClick={onClose}
+                  className="text-zinc-500 hover:bg-zinc-200 p-1 transition-all active:opacity-80"
+                  aria-label="Close"
+                >
+                  <span className="material-symbols-outlined !text-[18px]" data-icon="close">close</span>
+                </button>
+              </div>
+            </header>
+
+            {/* MAIN CONTENT AREA */}
+            <main className="flex-grow overflow-y-auto p-6 space-y-8">
+              {/* SYSTEM STATUS READOUT */}
+              <section>
+                <div className="flex items-baseline justify-between mb-2">
+                  <h2 className="font-label text-[10px] tracking-[0.15em] uppercase font-semibold text-zinc-500">Live Queue Status</h2>
+                  <span className="font-label text-[10px] tracking-widest text-zinc-400">SYNC: ACTIVE</span>
+                </div>
+                <div className="h-[1px] w-full bg-outline-variant mb-6"></div>
+              </section>
+
+              {/* CATEGORY LIST (TRIAGED) */}
+              <nav className="space-y-1">
+                <CategoryList
+                  items={categories}
+                  onCategoryClick={(id) => onNavigate(LEVEL_2_QUEUE, { categoryId: id })}
+                />
+              </nav>
+
+              {/* HUD ANALYTIC */}
+              <div className="mt-12 p-4 border border-outline-variant bg-surface-container-lowest">
+                <MetricsCard metrics={metrics} />
+              </div>
+            </main>
+
+            {/* FOOTER */}
+            <footer className="w-full flex flex-col gap-4 p-6 bg-zinc-50 border-t border-outline-variant">
+              <div className="flex justify-between items-center">
+                <a className="font-label text-[10px] tracking-[0.05em] uppercase font-bold text-zinc-900 flex items-center gap-2 hover:opacity-80 transition-all" href="#">
+                  ↗ Open Main Inbox in Outlook
+                </a>
+                <span className="font-label text-[10px] tracking-[0.05em] uppercase text-zinc-400">
+                  © SAGITINE HUD
+                </span>
+              </div>
+            </footer>
           </motion.div>
-        )}
-      </motion.div>
-    </div>,
+        </motion.div>
+      )}
+    </AnimatePresence>,
     document.body
   );
 };

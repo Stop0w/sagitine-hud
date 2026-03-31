@@ -30,6 +30,17 @@ export default {
       fontFamily: {
         serif: ["Noto Serif", "serif"],
         sans: ["Inter", "sans-serif"],
+        headline: ["Noto Serif", "serif"],
+        body: ["Inter", "sans-serif"],
+        label: ["Inter", "sans-serif"],
+      },
+      borderRadius: {
+        DEFAULT: "0px",
+        lg: "0px",
+        xl: "0px",
+        "2xl": "0px",
+        "3xl": "0px",
+        full: "0px",
       },
     },
   },

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sagitine CX - The Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-fixed-dim": "#47464a",
+                        "on-tertiary-container": "#ffffff",
+                        "secondary": "#5d5e66",
+                        "on-tertiary-fixed": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "surface-tint": "#5f5e61",
+                        "on-surface-variant": "#474747",
+                        "surface-container": "#eeeeee",
+                        "secondary-fixed": "#c6c5cf",
+                        "tertiary-fixed": "#ac3400",
+                        "outline": "#777777",
+                        "on-error-container": "#410002",
+                        "surface-container-highest": "#e2e2e2",
+                        "surface-container-low": "#f3f3f3",
+                        "on-background": "#1a1c1c",
+                        "on-tertiary": "#ffdbd0",
+                        "tertiary-container": "#cc4815",
+                        "on-primary-container": "#ffffff",
+                        "tertiary": "#701f00",
+                        "primary": "#000000",
+                        "on-secondary-container": "#1a1b22",
+                        "inverse-surface": "#2f3131",
+                        "primary-fixed": "#5f5e61",
+                        "primary-container": "#3b3b3e",
+                        "on-primary": "#e4e1e6",
+                        "surface-bright": "#f9f9f9",
+                        "surface": "#f9f9f9",
+                        "on-secondary-fixed": "#1a1b22",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-high": "#e8e8e8",
+                        "secondary-fixed-dim": "#abaab4",
+                        "tertiary-fixed-dim": "#832600",
+                        "on-primary-fixed": "#ffffff",
+                        "inverse-primary": "#c8c5ca",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#e4e1e6",
+                        "on-secondary-fixed-variant": "#3a3b43",
+                        "secondary-container": "#d4d3dd",
+                        "surface-dim": "#dadada",
+                        "outline-variant": "#c6c6c6",
+                        "on-surface": "#1a1c1c",
+                        "inverse-on-surface": "#f0f1f1",
+                        "on-tertiary-fixed-variant": "#ffdbd0",
+                        "error": "#ba1a1a",
+                        "on-error": "#ffffff",
+                        "surface-variant": "#e2e2e2",
+                        "background": "#f9f9f9"
+                    },
+                    fontFamily: {
+                        "headline": ["Noto Serif", "serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "0px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #f3f3f3; /* Changed from #dadada to a lighter, plain grey/white */
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+            font-size: 18px;
+        }
+        .clinical-shadow {
+            box-shadow: 0 32px 64px rgba(0, 0, 0, 0.1);
+        }
+        #hub-widget {
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+        }
+        #hub-widget.hidden-state {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="flex items-end justify-end p-6">
+<!-- THE HUB: SLIDE-UP WINDOW -->
+<div class="w-[400px] h-[600px] bg-surface flex flex-col clinical-shadow border border-outline-variant relative" id="hub-widget">
+<!-- HEADER -->
+<header class="flex justify-between items-center w-full px-4 h-14 bg-zinc-50 border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="font-serif italic text-xl text-zinc-900">Sagitine CX</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="text-zinc-500 hover:bg-zinc-200 p-1 transition-all active:opacity-80">
+<span class="material-symbols-outlined" data-icon="minimize">minimize</span>
+</button>
+<button class="text-zinc-500 hover:bg-zinc-200 p-1 transition-all active:opacity-80" onclick="document.getElementById('hub-widget').classList.add('hidden-state')">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+</header>
+<!-- MAIN CONTENT AREA -->
+<main class="flex-grow overflow-y-auto p-6 space-y-8">
+<!-- SYSTEM STATUS READOUT -->
+<section>
+<div class="flex items-baseline justify-between mb-2">
+<h2 class="font-label text-[10px] tracking-[0.15em] uppercase font-semibold text-zinc-500">Live Queue Status</h2>
+<span class="font-label text-[10px] tracking-widest text-zinc-400">SYNC: ACTIVE</span>
+</div>
+<div class="h-[1px] w-full bg-outline-variant mb-6"></div>
+</section>
+<!-- CATEGORY LIST (TRIAGED) -->
+<nav class="space-y-1">
+<!-- Category Row: Damaged & Faulty -->
+<div class="group flex items-center justify-between p-4 bg-surface-container-low hover:bg-surface-container-high transition-colors cursor-pointer border-l-4 border-tertiary">
+<div class="flex flex-col gap-1">
+<span class="font-body text-sm font-medium text-on-surface">Damaged &amp; Faulty</span>
+<div class="flex items-center gap-2">
+<span class="font-label text-[10px] tracking-wider text-tertiary font-bold uppercase">1 Urgent Action</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="font-headline italic text-2xl text-on-surface">2</span>
+<div class="w-2 h-2 bg-tertiary"></div>
+</div>
+</div>
+<!-- Category Row: Shipping & Delivery -->
+<div class="group flex items-center justify-between p-4 bg-surface hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex flex-col gap-1">
+<span class="font-body text-sm font-medium text-on-surface">Shipping &amp; Delivery</span>
+<span class="font-label text-[10px] tracking-wider text-zinc-400 uppercase">Awaiting Carrier Sync</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="font-headline italic text-2xl text-zinc-400">5</span>
+<div class="w-2 h-2 bg-transparent"></div>
+</div>
+</div>
+<!-- Category Row: General Inquiries -->
+<div class="group flex items-center justify-between p-4 bg-surface hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex flex-col gap-1">
+<span class="font-body text-sm font-medium text-on-surface">General Inquiries</span>
+<span class="font-label text-[10px] tracking-wider text-zinc-400 uppercase">Standard Priority</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="font-headline italic text-2xl text-zinc-400">5</span>
+<div class="w-2 h-2 bg-transparent"></div>
+</div>
+</div>
+</nav>
+<!-- HUD ANALYTIC -->
+<div class="mt-12 p-4 border border-outline-variant bg-surface-container-lowest">
+<div class="flex justify-between items-end">
+<div>
+<p class="font-label text-[9px] tracking-widest text-zinc-500 uppercase mb-1">Avg Response Time</p>
+<p class="font-headline text-3xl tracking-tighter">14<span class="text-sm font-body tracking-normal ml-1">m</span></p>
+</div>
+<div class="text-right">
+<p class="font-label text-[9px] tracking-widest text-tertiary uppercase mb-1">Criticality</p>
+<p class="font-body text-xs font-bold">NOMINAL</p>
+</div>
+</div>
+</div>
+</main>
+<!-- FOOTER -->
+<footer class="w-full flex flex-col gap-4 p-6 bg-zinc-50 border-t border-outline-variant">
+<div class="flex justify-between items-center">
+<a class="font-label text-[10px] tracking-[0.05em] uppercase font-bold text-zinc-900 flex items-center gap-2 hover:opacity-80 transition-all" href="#">
+                    ↗ Open Main Inbox in Outlook
+                </a>
+<span class="font-label text-[10px] tracking-[0.05em] uppercase text-zinc-400">
+                    © SAGITINE HUD
+                </span>
+</div>
+</footer>
+<!-- STATUS RIBBON -->
+<div class="absolute left-0 top-14 bottom-0 w-1 bg-zinc-200"></div>
+</div>
+</body></html>

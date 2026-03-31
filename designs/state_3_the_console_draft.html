@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sagitine CX - The Console</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-fixed-dim": "#47464a",
+              "on-tertiary-container": "#ffffff",
+              "secondary": "#5d5e66",
+              "on-tertiary-fixed": "#ffffff",
+              "on-secondary": "#ffffff",
+              "surface-tint": "#5f5e61",
+              "on-surface-variant": "#474747",
+              "surface-container": "#eeeeee",
+              "secondary-fixed": "#c6c5cf",
+              "tertiary-fixed": "#ac3400",
+              "outline": "#777777",
+              "on-error-container": "#410002",
+              "surface-container-highest": "#e2e2e2",
+              "surface-container-low": "#f3f3f3",
+              "on-background": "#1a1c1c",
+              "on-tertiary": "#ffdbd0",
+              "tertiary-container": "#cc4815",
+              "on-primary-container": "#ffffff",
+              "tertiary": "#701f00",
+              "primary": "#000000",
+              "on-secondary-container": "#1a1b22",
+              "inverse-surface": "#2f3131",
+              "primary-fixed": "#5f5e61",
+              "primary-container": "#3b3b3e",
+              "on-primary": "#e4e1e6",
+              "surface-bright": "#f9f9f9",
+              "surface": "#f9f9f9",
+              "on-secondary-fixed": "#1a1b22",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-high": "#e8e8e8",
+              "secondary-fixed-dim": "#abaab4",
+              "tertiary-fixed-dim": "#832600",
+              "on-primary-fixed": "#ffffff",
+              "inverse-primary": "#c8c5ca",
+              "error-container": "#ffdad6",
+              "on-primary-fixed-variant": "#e4e1e6",
+              "on-secondary-fixed-variant": "#3a3b43",
+              "secondary-container": "#d4d3dd",
+              "surface-dim": "#dadada",
+              "outline-variant": "#c6c6c6",
+              "on-surface": "#1a1c1c",
+              "inverse-on-surface": "#f0f1f1",
+              "on-tertiary-fixed-variant": "#ffdbd0",
+              "error": "#ba1a1a",
+              "on-error": "#ffffff",
+              "surface-variant": "#e2e2e2",
+              "background": "#f9f9f9"
+            },
+            fontFamily: {
+              "headline": ["Noto Serif"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "0px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
+            font-size: 20px;
+        }
+        body {
+            background-color: #f9f9f9;
+            color: #1a1c1c;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .clinical-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .clinical-scroll::-webkit-scrollbar-track {
+            background: #f3f3f3;
+        }
+        .clinical-scroll::-webkit-scrollbar-thumb {
+            background: #c6c6c6;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 md:p-8">
+<!-- Chatbot Window Footprint -->
+<div class="w-full max-w-[420px] h-[720px] bg-surface flex flex-col shadow-2xl relative border border-outline-variant">
+<!-- TopAppBar (Shared Component Implementation) -->
+<header class="flex justify-between items-center w-full px-4 h-14 bg-zinc-50 dark:bg-zinc-950 border-b border-outline-variant">
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-1 text-zinc-900 dark:text-zinc-50 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all scale-95 active:opacity-80 p-1">
+<span class="material-symbols-outlined">arrow_back</span>
+<span class="font-sans text-[11px] uppercase tracking-widest font-medium">Back</span>
+</button>
+</div>
+<div class="font-serif italic text-xl text-zinc-900 dark:text-zinc-50">
+                Sagitine CX
+            </div>
+<div class="flex items-center gap-2">
+<button class="material-symbols-outlined text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 p-1 transition-all">minimize</button>
+<button class="material-symbols-outlined text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 p-1 transition-all">open_in_full</button>
+<button class="material-symbols-outlined text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 p-1 transition-all">close</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto clinical-scroll flex flex-col">
+<!-- Section A: Customer Context -->
+<section class="p-6 border-b border-outline-variant">
+<div class="flex flex-col gap-1 mb-6">
+<div class="flex items-center gap-2">
+<span class="w-1 h-4 bg-tertiary"></span>
+<h2 class="font-headline text-2xl tracking-tight">Elena Rostov</h2>
+</div>
+<div class="flex items-center gap-4 mt-2">
+<div class="bg-surface-container-highest px-2 py-0.5">
+<span class="font-label text-[10px] uppercase tracking-[0.05em] font-semibold text-primary">Repeat Buyer</span>
+</div>
+<span class="font-label text-[10px] uppercase tracking-[0.05em] text-outline">LTV: $4,290.00</span>
+</div>
+</div>
+<div class="relative bg-surface-container-low p-4">
+<span class="absolute -top-2 left-4 px-2 bg-surface font-label text-[9px] uppercase tracking-widest text-outline">Raw Email Body</span>
+<p class="font-body text-xs leading-relaxed text-on-surface-variant">
+                        "Hello, I'm checking on the status of my order #SAG-9921. It was supposed to arrive yesterday. This is my fourth purchase this year and usually, the logistics are impeccable. Please advise if I should expect a delay or if the package is lost."
+                    </p>
+</div>
+</section>
+<!-- Section B: AI Co-Pilot -->
+<section class="p-6 bg-surface-container-lowest">
+<div class="flex justify-between items-center mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="font-label text-[11px] uppercase tracking-widest font-bold">AI Co-Pilot Draft</span>
+</div>
+<span class="font-label text-[10px] text-outline italic">98% Accuracy Confidence</span>
+</div>
+<div class="bg-zinc-100 p-5 border-l-2 border-primary">
+<p class="font-body text-[13px] leading-relaxed text-zinc-800">
+                        Dear Elena,<br/><br/>
+                        Thank you for reaching out and for your continued loyalty to Sagitine. I have personally investigated order #SAG-9921.<br/><br/>
+                        There was a brief logistical hold at the regional hub due to weather. Your package is currently out for delivery and will reach you before 5:00 PM today. <br/><br/>
+                        As a gesture of appreciation for your patience, I've applied a priority credit to your account for your next acquisition.
+                    </p>
+</div>
+</section>
+<!-- Section C: Action Bar -->
+<section class="px-6 py-4 bg-surface border-y border-outline-variant">
+<div class="grid grid-cols-3 gap-1">
+<button class="flex flex-col items-center justify-center gap-2 py-3 border border-transparent hover:bg-surface-container-high transition-colors group">
+<span class="material-symbols-outlined text-outline group-hover:text-primary">content_copy</span>
+<span class="font-label text-[9px] uppercase tracking-tighter">Copy</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 py-3 border border-transparent hover:bg-surface-container-high transition-colors group">
+<span class="material-symbols-outlined text-outline group-hover:text-primary">category</span>
+<span class="font-label text-[9px] uppercase tracking-tighter">Category</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 py-3 border border-transparent hover:bg-surface-container-high transition-colors group">
+<span class="material-symbols-outlined text-error group-hover:opacity-80">delete</span>
+<span class="font-label text-[9px] uppercase tracking-tighter text-error">Delete</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Bottom Primary Action -->
+<footer class="p-6 bg-surface">
+<button class="w-full bg-primary text-on-primary py-4 flex items-center justify-center gap-2 group transition-all active:scale-[0.98]">
+<span class="font-label text-[12px] uppercase tracking-[0.1em] font-bold">Open Draft in Outlook</span>
+<span class="material-symbols-outlined text-sm">north_east</span>
+</button>
+<div class="mt-6 flex justify-between items-center">
+<span class="font-label text-[9px] tracking-[0.05em] uppercase text-outline">© SAGITINE HUD</span>
+<div class="flex gap-4">
+<a class="font-label text-[9px] tracking-[0.05em] uppercase text-outline hover:text-primary transition-colors" href="#">Support</a>
+<a class="font-label text-[9px] tracking-[0.05em] uppercase text-outline hover:text-primary transition-colors" href="#">Privacy</a>
+</div>
+</div>
+</footer>
+<!-- Micro-HUD Meta Elements -->
+<div class="absolute -right-12 top-1/2 -rotate-90 hidden lg:block">
+<span class="font-label text-[10px] tracking-[0.3em] uppercase text-outline-variant opacity-50">SESSION_ID_0081_R</span>
+</div>
+</div>
+</body></html>

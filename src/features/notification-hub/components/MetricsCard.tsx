@@ -12,22 +12,22 @@ export function MetricsCard({ metrics }: MetricsCardProps) {
     <div className="mt-12 p-4 border border-outline-variant bg-surface-container-lowest">
       <div className="flex justify-between items-end">
         <div>
-          <p className="font-sans text-[9px] tracking-widest text-zinc-500 uppercase mb-1">
+          <p className="font-label text-[9px] tracking-widest text-zinc-500 uppercase mb-1">
             Avg Response Time
           </p>
-          <p className="font-serif text-3xl tracking-tighter">
-            {formatMinutes(metrics.avgResponseTimeMinutes)}
-            <span className="text-sm font-sans tracking-normal ml-1">
-              {formatMinutes(metrics.avgResponseTimeMinutes)}
+          <p className="font-headline text-3xl tracking-tighter">
+            {Math.round(metrics.avgResponseTimeMinutes)}
+            <span className="text-sm font-body tracking-normal ml-1">
+              m
             </span>
           </p>
         </div>
         <div className="text-right">
-          <p className="font-sans text-[9px] tracking-widest text-tertiary uppercase mb-1">
+          <p className="font-label text-[9px] tracking-widest text-tertiary uppercase mb-1">
             Criticality
           </p>
           <p
-            className="font-sans text-xs font-bold"
+            className="font-body text-xs font-bold"
             style={{
               color: metrics.criticality === "CRITICAL" ? "#ba1a1a" :
                      metrics.criticality === "ELEVATED" ? "#701f00" :
