@@ -1,31 +1,54 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSagitineSync } from '@/hooks/useSagitineSync';
+import type { HubView } from '../types';
 import { HubHeader } from './HubHeader';
 import { CategoryList } from './CategoryList';
 import { MetricsCard } from './MetricsCard';
 import { TicketQueue } from './TicketQueue';
 import { ResolutionConsole } from './ResolutionConsole';
-import { NotificationHubView, LEVEL_1_HUB, LEVEL_2_QUEUE, LEVEL_3_CONSOLE } from '@/types/notification-hub';
+import { LEVEL_1_HUB, LEVEL_2_QUEUE, LEVEL_3_CONSOLE } from '../types';
 
 interface NotificationHubProps {
   isOpen: boolean;
+  currentView: HubView;
+  categories: CategorySummaryItem[];
+  metrics: HubMetrics;
   onClose: () => void;
-  pillRef: React.RefObject<HTMLButtonElement>;
+  onNavigate: (view: HubView, payload?: { categoryId?: string; ticketId?: string }) => void;
+  pillRef?: React.RefObject<HTMLButtonElement | null>;
+}
+
+interface CategorySummaryItem {
+  id: string;
+  label: string;
+  shortLabel: string;
+  count: number;
+  urgency: 'low' | 'medium' | 'high';
+  hasNew: boolean;
+  avgConfidence: number;
+  avgAgeMinutes: number;
+}
+
+interface HubMetrics {
+  totalOpen: number;
+  urgentCount: number;
+  reviewCount: number;
+  avgResponseTimeMinutes: number;
+  avgConfidence: number;
 }
 
 export const NotificationHub: React.FC<NotificationHubProps> = ({
   isOpen,
+  currentView,
+  categories,
+  metrics,
   onClose,
+  onNavigate,
   pillRef,
 }) => {
-  const [currentView, setCurrentView] = useState<NotificationHubView>(LEVEL_1_HUB);
   const closeRef = useRef<HTMLButtonElement>(null);
   const hubRef = useRef<HTMLDivElement>(null);
-  const { data: hubData, updateLocalState } = useSagitineSync('/api/metrics', {
-    pollingIntervalMs: 10000,
-  });
 
   // Focus management
   useEffect(() => {
@@ -46,14 +69,14 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isOpen) {
-        setCurrentView(LEVEL_1_HUB);
+        onNavigate(LEVEL_1_HUB);
         onClose();
       }
     };
 
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, onNavigate]);
 
   // Backdrop click handler
   const handleBackdropClick = useCallback((event: React.MouseEvent) => {
@@ -61,34 +84,6 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
       onClose();
     }
   }, [currentView, onClose]);
-
-  // Navigation handlers
-  const handleNavigate = useCallback((view: NotificationHubView) => {
-    setCurrentView(view);
-  }, []);
-
-  const handleBackToHub = useCallback(() => {
-    setCurrentView(LEVEL_1_HUB);
-  }, []);
-
-  const handleTicketSelect = useCallback(() => {
-    setCurrentView(LEVEL_3_CONSOLE);
-  }, []);
-
-  // Handle optimistic state updates
-  const handleTicketAction = useCallback((ticketId: string, action: string) => {
-    if (hubData) {
-      const optimisticUpdate = {
-        ...hubData,
-        tickets: hubData.tickets.map(ticket =>
-          ticket.id === ticketId
-            ? { ...ticket, [action]: true }
-            : ticket
-        ),
-      };
-      updateLocalState(optimisticUpdate);
-    }
-  }, [hubData, updateLocalState]);
 
   if (!isOpen) return null;
 
@@ -156,11 +151,11 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
           {/* Hub Header */}
           <HubHeader
             currentView={currentView}
-            onNavigate={handleNavigate}
-            onBackToHub={handleBackToHub}
-            ticketCount={hubData?.metrics?.total_tickets || 0}
-            urgentCount={hubData?.metrics?.urgent_count || 0}
-            sentToday={hubData?.metrics?.sent_today || 0}
+            onNavigate={onNavigate}
+            onBackToHub={() => onNavigate(LEVEL_1_HUB)}
+            ticketCount={metrics.totalOpen || 0}
+            urgentCount={metrics.urgentCount || 0}
+            sentToday={0}
           />
 
           {/* Main content area */}
@@ -179,15 +174,15 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
                   <div className="w-2/5 h-full border-r border-gray-100 overflow-hidden">
                     <MetricsCard
                       title="Queue Overview"
-                      value={hubData?.metrics?.total_tickets || 0}
+                      value={metrics.totalOpen || 0}
                       change="+12"
                       changeType="positive"
                       icon="📊"
                     />
                     <CategoryList
-                      categories={hubData?.categories || []}
-                      selectedCategory={hubData?.selected_category}
-                      onCategorySelect={updateLocalState}
+                      categories={categories}
+                      selectedCategory={undefined}
+                      onCategorySelect={(categoryId) => onNavigate(LEVEL_2_QUEUE, { categoryId })}
                     />
                   </div>
 
@@ -217,14 +212,15 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
                   className="h-full"
                 >
                   <TicketQueue
-                    tickets={hubData?.tickets || []}
-                    selectedTicket={hubData?.selected_ticket}
+                    tickets={[]}
+                    selectedTicket={undefined}
                     loading={false}
                     onTicketSelect={(ticket) => {
-                      updateLocalState({ selected_ticket: ticket });
-                      handleTicketSelect();
+                      onNavigate(LEVEL_3_CONSOLE, { ticketId: ticket.id });
                     }}
-                    onTicketAction={(ticketId, action) => handleTicketAction(ticketId, action)}
+                    onTicketAction={(ticketId, action) => {
+                      console.log(`Ticket action: ${ticketId}, ${action}`);
+                    }}
                   />
                 </motion.div>
               )}
@@ -239,9 +235,9 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
                   className="h-full"
                 >
                   <ResolutionConsole
-                    ticket={hubData?.selected_ticket}
-                    onClose={handleBackToHub}
-                    onSave={updateLocalState}
+                    ticket={undefined}
+                    onClose={() => onNavigate(LEVEL_1_HUB)}
+                    onSave={(data) => console.log('Resolution data saved:', data)}
                   />
                 </motion.div>
               )}
