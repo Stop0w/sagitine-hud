@@ -56,6 +56,18 @@
   font-family: 'Inter', sans-serif;
 }
 
+/* Material Symbols Outlined Icons */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+  font-size: 18px;
+}
+
+/* Clinical shadow for hub widget */
+.clinical-shadow {
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.1);
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 4px;

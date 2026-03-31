@@ -152,27 +152,48 @@ def parse_msg_file(msg_path: Path) -> Dict[str, Any]:
 
         # Extract sender (from - should be Sagitine email for sent items)
         if msg.sender:
-            result['sender_name'] = msg.sender.name or ''
-            result['sender_email'] = msg.sender.email_address or ''
+            # Sender might be string or object
+            if isinstance(msg.sender, str):
+                result['sender_name'] = msg.sender
+                result['sender_email'] = msg.sender
+            elif hasattr(msg.sender, 'name'):
+                result['sender_name'] = msg.sender.name or ''
+                result['sender_email'] = msg.sender.email_address or ''
+            else:
+                result['sender_name'] = str(msg.sender)
+                result['sender_email'] = str(msg.sender)
 
         # Extract recipient (to - should be customer for sent items)
-        if msg.to:
-            if len(msg.to) > 0:
-                result['recipient_name'] = msg.to[0].name or ''
-                result['recipient_email'] = msg.to[0].email_address or ''
+        if msg.to and len(msg.to) > 0:
+            recipient = msg.to[0]
+            # Recipient might be string or object
+            if isinstance(recipient, str):
+                result['recipient_name'] = recipient
+                result['recipient_email'] = recipient
+            elif hasattr(recipient, 'name'):
+                result['recipient_name'] = recipient.name or ''
+                result['recipient_email'] = recipient.email_address or ''
+            else:
+                result['recipient_name'] = str(recipient)
+                result['recipient_email'] = str(recipient)
 
         # Extract date sent
         if msg.date:
             result['sent_at'] = msg.date.isoformat()
 
         # Extract body (try HTML first, then plain text)
-        body_html = msg.htmlBody or ''
-        body_text = msg.body or ''
+        body_html = msg.htmlBody or b''
+        body_text = msg.body or b''
 
+        # Handle bytes vs strings
         if body_html:
+            if isinstance(body_html, bytes):
+                body_html = body_html.decode('utf-8', errors='replace')
             result['raw_body'] = body_html
             result['clean_body'] = clean_html_body(body_html)
         elif body_text:
+            if isinstance(body_text, bytes):
+                body_text = body_text.decode('utf-8', errors='replace')
             result['raw_body'] = body_text
             result['clean_body'] = body_text.strip()
 

@@ -78,11 +78,11 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed bottom-6 right-6 z-[100] w-[400px] h-[600px] bg-surface flex flex-col shadow-[0_32px_64px_rgba(0,0,0,0.1)] border border-outline-variant relative"
+          className="fixed bottom-6 right-6 z-[100] w-[400px] h-[600px] bg-surface flex flex-col clinical-shadow border border-outline-variant relative"
           ref={hubRef}
-          initial={{ opacity: 0, y: 20, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.95 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
         >
           {/* STATUS RIBBON */}

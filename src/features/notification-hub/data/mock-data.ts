@@ -49,9 +49,9 @@ export const mockHubData: HubData = {
     totalOpen: 12,
     urgentCount: 2,
     reviewCount: 7,
-    avgResponseTimeMinutes: 65,
+    avgResponseTimeMinutes: 14,
     avgConfidence: 0.87,
-    criticality: "ELEVATED",
+    criticality: "NOMINAL",
   },
   queueByCategory: {
     "damaged_missing_faulty": [

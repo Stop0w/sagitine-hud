@@ -1,7 +1,6 @@
 // src/features/notification-hub/components/NotificationPill.tsx
 
 import { forwardRef } from "react";
-import { Terminal } from "lucide-react";
 
 interface NotificationPillProps {
   count: number;
@@ -53,7 +52,9 @@ export const NotificationPill = forwardRef<HTMLButtonElement, NotificationPillPr
 
         {/* Trigger Icon */}
         <div className="ml-2 flex items-center justify-center bg-primary rounded-full p-1.5 group-hover:bg-primary-container transition-colors">
-          <Terminal className="text-white !text-[14px]" />
+          <span className="material-symbols-outlined text-white !text-[14px]" data-icon="terminal">
+            terminal
+          </span>
         </div>
       </button>
     );
