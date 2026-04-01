@@ -41,6 +41,7 @@ export interface ResolutionConsoleData {
   emailId: string;
   customerName: string;
   customerEmail: string;
+  customerSocialHandle?: string; // @sarah_j (IG)
   subject: string;
   fullMessage: string;
   categoryId: string;
@@ -50,6 +51,25 @@ export interface ResolutionConsoleData {
   aiSummary: string;
   draftResponse: string;
   recommendedAction: string;
+  // CRM Data Fields
+  totalContacts: number;
+  thirtyDayVol: number;
+  lastContactDate: string; // ISO date string
+  customerTier: 'VIP' | 'Standard' | 'At Risk';
+  // Timeline for expansion mode
+  timeline?: Array<{
+    date: string;
+    event: string;
+    type: 'order' | 'email' | 'inquiry' | 'support';
+  }>;
+  // Email thread for expansion mode
+  emailThread?: Array<{
+    from: string;
+    date: string;
+    subject: string;
+    body: string;
+    isIncoming: boolean;
+  }>;
 }
 
 export interface HubMetrics {

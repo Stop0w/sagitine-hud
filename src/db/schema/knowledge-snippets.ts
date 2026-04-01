@@ -17,6 +17,12 @@ export const snippetCategoryEnum = pgEnum('snippet_category', [
   'stock_availability',
   'partnership_wholesale_press',
   'brand_feedback_general',
+  // Expanded operational and functional categories
+  'spam_solicitation',
+  'account_billing_payment',
+  'order_modification_cancellation',
+  'praise_testimonial_ugc',
+  'other_uncategorized',
 ]);
 
 // Snippet types from Appendix B

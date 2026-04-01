@@ -1,16 +1,6 @@
 // src/features/notification-hub/data/mock-data.ts
 
-import type {
-  HubView,
-  UrgencyLevel,
-  RiskLevel,
-  CriticalityLevel,
-  CategorySummaryItem,
-  QueueTicketItem,
-  ResolutionConsoleData,
-  HubMetrics,
-  HubData,
-} from '../types';
+import type { HubData } from '../types';
 
 export const mockHubData: HubData = {
   categories: [
@@ -43,6 +33,26 @@ export const mockHubData: HubData = {
       hasNew: false,
       avgConfidence: 0.82,
       avgAgeMinutes: 120,
+    },
+    {
+      id: "praise_testimonial_ugc",
+      label: "Praise & Testimonials",
+      shortLabel: "Praise",
+      count: 1,
+      urgency: "low",
+      hasNew: true,
+      avgConfidence: 0.95,
+      avgAgeMinutes: 12,
+    },
+    {
+      id: "spam_solicitation",
+      label: "Spam & Solicitation",
+      shortLabel: "Spam",
+      count: 14,
+      urgency: "low",
+      hasNew: true,
+      avgConfidence: 0.99,
+      avgAgeMinutes: 5,
     },
   ],
   metrics: {
@@ -235,6 +245,7 @@ export const mockHubData: HubData = {
       emailId: "email-001",
       customerName: "Sarah Johnson",
       customerEmail: "sarah.johnson@email.com",
+      customerSocialHandle: "@sarah_j_creative",
       subject: "Damaged product received",
       fullMessage: "Hi team,\n\nI received my order yesterday (Order #12345) and unfortunately the product arrived with visible cracks on the surface. The item doesn't function properly and I'm quite disappointed as this was meant to be a gift.\n\nCould you please organise a replacement or refund as soon as possible?\n\nThank you,\nSarah Johnson\nCustomer since 2022",
       categoryId: "damaged_missing_faulty",
@@ -242,14 +253,43 @@ export const mockHubData: HubData = {
       confidence: 0.94,
       riskLevel: "high",
       aiSummary: "Customer reports severely damaged product that doesn't function, needs replacement/refurg. High urgency due to gift timing and product failure.",
-      draftResponse: "Dear Sarah, Thank you for reaching out regarding your damaged order. I sincerely apologise for the inconvenience this has caused. Please accept our apologies for this poor experience. We will immediately organise a replacement shipment for you with express delivery to ensure you receive your gift on time. You can expect your replacement to arrive within 2-3 business days. We will also process a 10% discount voucher for the inconvenience caused. Is there anything else I can assist you with today?",
+      draftResponse: "Dear Sarah,\n\nThank you for reaching out regarding your damaged order.\n\nI sincerely apologise for the inconvenience this has caused. Please accept our apologies for this poor experience. We will immediately organise a replacement shipment for you with express delivery to ensure you receive your gift on time. You can expect your replacement to arrive within 2-3 business days.\n\nWe will also process a 10% discount voucher for the inconvenience caused. Is there anything else I can assist you with today?\n\nBest regards,\nSagitine Customer Care",
       recommendedAction: "Replace damaged item with express shipping + 10% discount voucher",
+      // CRM Data
+      totalContacts: 12,
+      thirtyDayVol: 4,
+      lastContactDate: "2025-10-14",
+      customerTier: "VIP",
+      // Timeline for expansion mode
+      timeline: [
+        { date: "2025-10-12", event: "Order #4421 Delivered", type: "order" },
+        { date: "2025-10-14", event: "Opened: Shipping Confirmation", type: "email" },
+        { date: "2025-10-15", event: "Inquiry: Damaged Product", type: "inquiry" },
+      ],
+      // Email thread for expansion mode
+      emailThread: [
+        {
+          from: "Sagitine",
+          date: "2025-10-12",
+          subject: "Your Order #4421 has shipped!",
+          body: "Hi Sarah, Your order has been shipped and will arrive by October 14th. Track your package here...",
+          isIncoming: false,
+        },
+        {
+          from: "Sarah Johnson",
+          date: "2025-10-15",
+          subject: "Damaged product received",
+          body: "Hi team, I received my order yesterday and unfortunately the product arrived with visible cracks...",
+          isIncoming: true,
+        },
+      ],
     },
     "003": {
       ticketId: "003",
       emailId: "email-003",
       customerName: "Alex Thompson",
       customerEmail: "alex.thompson@email.com",
+      customerSocialHandle: "@alex_t_dev",
       subject: "Product functionality questions",
       fullMessage: "Hello,\n\nI recently purchased your premium product and I'm having some trouble understanding how to use the advanced features. The user manual is quite technical and I'm not sure if I'm setting things up correctly.\n\nCould you provide more detailed instructions or perhaps a video tutorial? I'd like to make sure I'm getting the most out of this product.\n\nThanks,\nAlex",
       categoryId: "product_usage",
@@ -257,8 +297,36 @@ export const mockHubData: HubData = {
       confidence: 0.83,
       riskLevel: "low",
       aiSummary: "Customer needs help with advanced product features and requests detailed instructions or video tutorial. Low urgency as product is functional but needs guidance.",
-      draftResponse: "Dear Alex, Thank you for your question about our premium product features. I understand you'd like more detailed instructions to help you get the most out of your purchase. We would be happy to organise comprehensive video tutorials for you and schedule a personalised consultation if needed. Our team will create custom guides tailored to your specific use case. Would you prefer written documentation, video tutorials, or a live session with our product specialist?",
+      draftResponse: "Dear Alex,\n\nThank you for your question about our premium product features. I understand you'd like more detailed instructions to help you get the most out of your purchase.\n\nWe would be happy to organise comprehensive video tutorials for you and schedule a personalised consultation if needed. Our team will create custom guides tailored to your specific use case.\n\nWould you prefer written documentation, video tutorials, or a live session with our product specialist?\n\nBest regards,\nSagitine Customer Care",
       recommendedAction: "Provide video tutorials + offer personalised consultation",
+      // CRM Data
+      totalContacts: 3,
+      thirtyDayVol: 1,
+      lastContactDate: "2025-10-01",
+      customerTier: "Standard",
+      // Timeline for expansion mode
+      timeline: [
+        { date: "2025-09-28", event: "Order: Premium Product", type: "order" },
+        { date: "2025-10-01", event: "Opened: Welcome Guide", type: "email" },
+        { date: "2025-10-10", event: "Inquiry: Advanced Features", type: "inquiry" },
+      ],
+      // Email thread for expansion mode
+      emailThread: [
+        {
+          from: "Sagitine",
+          date: "2025-09-28",
+          subject: "Welcome to Sagitine Premium!",
+          body: "Hi Alex, Thank you for your purchase. Here's your welcome guide and getting started tutorial...",
+          isIncoming: false,
+        },
+        {
+          from: "Alex Thompson",
+          date: "2025-10-10",
+          subject: "Product functionality questions",
+          body: "Hello, I recently purchased your premium product and I'm having some trouble...",
+          isIncoming: true,
+        },
+      ],
     },
   },
   lastUpdatedAt: "2024-03-31T12:30:00Z",

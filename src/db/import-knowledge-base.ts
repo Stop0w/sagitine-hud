@@ -18,18 +18,24 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Load environment variables from .env
+import { config } from 'dotenv';
+config({ path: path.join(__dirname, '../../.env') });
+
 interface GoldResponse {
   id: string;
   title: string;
   category: string;
   body_template: string;
   tone_notes: string;
+  is_active: boolean;
+  use_count: number;
   avg_word_count?: number;
   avg_paragraph_count?: number;
   sample_count?: number;
-  created_at?: string;
-  exported_at?: string;
-  ready_for_db?: boolean;
+  created_at: string;
+  updated_at: string;
+  source_emails?: number;
 }
 
 interface KnowledgeSnippet {
@@ -39,9 +45,10 @@ interface KnowledgeSnippet {
   category: string;
   content: string;
   tags: string[];
-  created_at?: string;
-  exported_at?: string;
-  ready_for_db?: boolean;
+  source?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AppendxBOutput {
@@ -54,8 +61,8 @@ async function main() {
 
   // Check if database exists
   if (!process.env.DATABASE_URL) {
-    console.error('❌ DATABASE_URL not set in .env.local');
-    console.log('   Please set DATABASE_URL and try again');
+    console.error('❌ DATABASE_URL not set in .env file');
+    console.log('   Please set DATABASE_URL in the .env file and try again');
     process.exit(1);
   }
 
@@ -91,6 +98,35 @@ async function main() {
 
   const goldResponses: GoldResponse[] = JSON.parse(goldResponsesContent);
   const knowledgeSnippets: KnowledgeSnippet[] = JSON.parse(snippetsContent);
+
+  // Transform data to match database schema
+  const transformedGoldResponses = goldResponses.map(r => ({
+    id: r.id,
+    title: r.title,
+    category: r.category,
+    body_template: r.body_template,
+    tone_notes: r.tone_notes,
+    is_active: r.is_active ?? true,
+    use_count: r.use_count ?? 0,
+    avg_word_count: r.avg_word_count,
+    avg_paragraph_count: null, // Not calculated in pipeline
+    sample_count: r.sample_count,
+    created_at: r.created_at || new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }));
+
+  const transformedSnippets = knowledgeSnippets.map(s => ({
+    id: s.id,
+    title: s.title,
+    type: s.type,
+    category: s.category,
+    content: s.content,
+    tags: s.tags || [],
+    source: 'backfill_pipeline',
+    is_active: s.is_active ?? true,
+    created_at: s.created_at || new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }));
 
   console.log(`📊 Data loaded:`);
   console.log(`   Gold Response Templates:  ${goldResponses.length}`);
@@ -152,16 +188,26 @@ async function main() {
     console.log(`   • All categories validated`);
     console.log(`   • Schema alignment confirmed\n`);
 
-    console.log(`📋 Import file created: src/db/import-knowledge-base.ts`);
-    console.log(`\n🚀 Next steps:`);
-    console.log(`   1. Ensure migration is applied: npx drizzle-kit push`);
-    console.log(`   2. Uncomment the insert statements below`);
-    console.log(`   3. Run this script: npx tsx src/db/import-knowledge-base.ts`);
-    console.log(`   4. Verify in database: SELECT * FROM gold_responses;\n`);
+    console.log(`⏳ Importing gold responses...`);
+    await db.insert(goldTable).values(transformedGoldResponses);
+    console.log(`   ✅ Imported ${transformedGoldResponses.length} gold responses`);
 
-    console.log(`📝 Import statements (ready to uncomment after migration):`);
-    console.log(`\n   // await db.insert(goldTable).values(goldResponses);`);
-    console.log(`   // await db.insert(snippetsTable).values(knowledgeSnippets);\n`);
+    console.log(`\n⏳ Importing knowledge snippets...`);
+    await db.insert(snippetsTable).values(transformedSnippets);
+    console.log(`   ✅ Imported ${transformedSnippets.length} knowledge snippets`);
+
+    console.log(`\n` + `=`.repeat(60));
+    console.log(`🎉 KNOWLEDGE BASE IMPORT COMPLETE!`);
+    console.log(`=`.repeat(60));
+    console.log(`\n✅ Successfully imported to Neon database:`);
+    console.log(`   • ${transformedGoldResponses.length} gold response templates`);
+    console.log(`   • ${transformedSnippets.length} knowledge snippets`);
+    console.log(`   • All ${[...new Set([...transformedGoldResponses.map(r => r.category), ...transformedSnippets.map(s => s.category)])].length} categories represented`);
+    console.log(`\n💡 Next steps:`);
+    console.log(`   1. Verify in Neon console: https://console.neon.tech`);
+    console.log(`   2. Run: npx drizzle-kit studio`);
+    console.log(`   3. Query: SELECT * FROM gold_responses LIMIT 5;`);
+    console.log(`\n`);
 
   } catch (error: any) {
     if (error.message?.includes('relation "gold_responses" does not exist')) {

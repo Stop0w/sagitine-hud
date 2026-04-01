@@ -1,7 +1,7 @@
 // src/features/notification-hub/components/MetricsCard.tsx
 
 import type { HubMetrics } from "../types";
-import { formatMinutes } from "../utils/formatters";
+
 
 interface MetricsCardProps {
   metrics: HubMetrics;
@@ -9,7 +9,7 @@ interface MetricsCardProps {
 
 export function MetricsCard({ metrics }: MetricsCardProps) {
   return (
-    <div className="mt-12 p-4 border border-outline-variant bg-surface-container-lowest">
+    <div className="">
       <div className="flex justify-between items-end">
         <div>
           <p className="font-label text-[9px] tracking-widest text-zinc-500 uppercase mb-1">

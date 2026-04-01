@@ -4,7 +4,11 @@ import { useState, useRef } from "react";
 import { NotificationPill } from "./features/notification-hub/components/NotificationPill";
 import { NotificationHub } from "./features/notification-hub/components/NotificationHub";
 import { mockHubData } from "./features/notification-hub/data/mock-data";
+import { mockHubMvpData } from "./features/notification-hub/data/mvp-mock-data";
 import type { HubView } from "./features/notification-hub/types";
+
+const UI_MODE = import.meta.env.VITE_UI_MODE || 'mvp'; // Defaulting to MVP locally
+const activeHubData = UI_MODE === 'mvp' ? mockHubMvpData : mockHubData;
 
 function App() {
   const pillRef = useRef<HTMLButtonElement>(null);
@@ -12,6 +16,7 @@ function App() {
   const [currentView, setCurrentView] = useState<HubView>("LEVEL_1_HUB");
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleNavigate = (
     view: HubView,
@@ -22,7 +27,7 @@ function App() {
       setActiveCategoryId(payload.categoryId);
     }
     if (payload?.ticketId !== undefined) {
-      setActiveCategoryId(payload.ticketId);
+      setActiveTicketId(payload.ticketId);
     }
   };
 
@@ -31,6 +36,7 @@ function App() {
     setCurrentView("LEVEL_1_HUB");
     setActiveCategoryId(null);
     setActiveTicketId(null);
+    setIsExpanded(false); // Reset expansion on close
   };
 
   return (
@@ -46,7 +52,8 @@ function App() {
           <div className="bg-surface-container-low p-8 border-l-4 border-primary">
             <p className="font-sans text-sm text-on-surface-variant">
               Sagitine AI CX Agent HUD System - Phase 1 Implementation<br/>
-              Status: Active • Queue: {mockHubData.metrics.totalOpen} total • {mockHubData.metrics.urgentCount} urgent
+              Status: Active • Queue: {activeHubData.metrics.totalOpen} total • {activeHubData.metrics.urgentCount} urgent
+               <span className="ml-4 font-bold text-[10px] tracking-widest text-[#0078D4]">[{UI_MODE.toUpperCase()} MODE]</span>
             </p>
           </div>
         </div>
@@ -54,8 +61,8 @@ function App() {
         {/* NotificationPill - embedded in page */}
         <NotificationPill
           ref={pillRef}
-          count={mockHubData.metrics.totalOpen}
-          urgentCount={mockHubData.metrics.urgentCount}
+          count={activeHubData.metrics.totalOpen}
+          urgentCount={activeHubData.metrics.urgentCount}
           onClick={() => setIsHubOpen(true)}
           isOpen={isHubOpen}
         />
@@ -65,8 +72,14 @@ function App() {
           <NotificationHub
             isOpen={isHubOpen}
             currentView={currentView}
-            categories={mockHubData.categories}
-            metrics={mockHubData.metrics}
+            categories={activeHubData.categories}
+            metrics={activeHubData.metrics}
+            queueByCategory={activeHubData.queueByCategory}
+            consoleByTicketId={activeHubData.consoleByTicketId}
+            activeCategoryId={activeCategoryId}
+            activeTicketId={activeTicketId}
+            isExpanded={isExpanded}
+            setIsExpanded={setIsExpanded}
             onClose={handleCloseHub}
             onNavigate={handleNavigate}
             pillRef={pillRef}
