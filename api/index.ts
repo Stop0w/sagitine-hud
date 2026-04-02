@@ -1,6 +1,6 @@
 // Vercel Serverless Function for Sagitine AI CX Agent
-import { classifyEmail } from '../src/api/internal/services/claude-classifier';
-import type { InboundEmailPayload, ClassificationAPIResponse } from '../src/api/internal/types';
+import { classifyEmail } from '../src/api/services/claude-classifier';
+import type { InboundEmailPayload, ClassificationAPIResponse } from '../src/api/types';
 
 export default async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
