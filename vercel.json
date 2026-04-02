@@ -1,30 +1,12 @@
 {
   "version": 2,
-  "builds": [
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
     {
-      "src": "api/**/*.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+      "source": "/api/:path*",
+      "destination": "/api/index.html"
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/dist/$1"
-    }
-  ],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "ANTHROPIC_API_KEY": "@anthropic_api_key"
-  }
+  ]
 }
