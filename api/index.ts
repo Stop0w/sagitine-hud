@@ -22,8 +22,8 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
-  // GET /health
-  if (req.method === 'GET' && path === '/health') {
+  // GET /api/health
+  if (req.method === 'GET' && path === '/api/health') {
     return new Response(
       JSON.stringify({
         status: 'ok',
@@ -38,8 +38,8 @@ export default async function handler(req: Request): Promise<Response> {
     );
   }
 
-  // GET /categories
-  if (req.method === 'GET' && path === '/categories') {
+  // GET /api/categories
+  if (req.method === 'GET' && path === '/api/categories') {
     return new Response(
       JSON.stringify({
         categories: [
@@ -60,8 +60,8 @@ export default async function handler(req: Request): Promise<Response> {
     );
   }
 
-  // POST /classify
-  if (req.method === 'POST' && path === '/classify') {
+  // POST /api/classify
+  if (req.method === 'POST' && path === '/api/classify') {
     try {
       const rawBody = await req.json();
 
