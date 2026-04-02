@@ -1,7 +1,6 @@
 {
-  "extends": "./tsconfig.json",
+  "extends": "@vitejs/plugin-react/tsconfig.json",
   "compilerOptions": {
-    "composite": true,
     "tsBuildInfoFile": "./node_modules/.cache/tsconfig.app.tsbuildinfo",
     "target": "ES2020",
     "useDefineForClassFields": true,
@@ -17,7 +16,6 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
     "jsx": "react-jsx",
     /* Path Aliases - Sagitine Standard */
     "baseUrl": ".",

@@ -51,11 +51,6 @@ interface KnowledgeSnippet {
   updated_at: string;
 }
 
-interface AppendxBOutput {
-  gold_responses: GoldResponse[];
-  knowledge_snippets: KnowledgeSnippet[];
-}
-
 async function main() {
   console.log('📥 Importing Appendix B knowledge base to Neon database\n');
 
@@ -103,29 +98,30 @@ async function main() {
   const transformedGoldResponses = goldResponses.map(r => ({
     id: r.id,
     title: r.title,
-    category: r.category,
-    body_template: r.body_template,
-    tone_notes: r.tone_notes,
-    is_active: r.is_active ?? true,
-    use_count: r.use_count ?? 0,
-    avg_word_count: r.avg_word_count,
-    avg_paragraph_count: null, // Not calculated in pipeline
-    sample_count: r.sample_count,
-    created_at: r.created_at || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    category: r.category as any, // Cast to satisfy enum type
+    actionType: 'provide_information' as const,
+    bodyTemplate: r.body_template,
+    toneNotes: r.tone_notes,
+    isActive: r.is_active ?? true,
+    useCount: r.use_count ?? 0,
+    avgWordCount: r.avg_word_count,
+    avgParagraphCount: null, // Not calculated in pipeline
+    sampleCount: r.sample_count,
+    createdAt: r.created_at ? new Date(r.created_at) : new Date(),
+    updatedAt: new Date(),
   }));
 
   const transformedSnippets = knowledgeSnippets.map(s => ({
     id: s.id,
     title: s.title,
-    type: s.type,
-    category: s.category,
+    type: s.type as any, // Cast to satisfy enum type
+    category: s.category as any, // Cast to satisfy enum type
     content: s.content,
     tags: s.tags || [],
     source: 'backfill_pipeline',
-    is_active: s.is_active ?? true,
-    created_at: s.created_at || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    isActive: s.is_active ?? true,
+    createdAt: s.created_at ? new Date(s.created_at) : new Date(),
+    updatedAt: new Date(),
   }));
 
   console.log(`📊 Data loaded:`);
