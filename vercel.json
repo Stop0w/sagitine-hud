@@ -1,10 +1,4 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "edge"
-    }
-  }
+  "outputDirectory": "dist"
 }
