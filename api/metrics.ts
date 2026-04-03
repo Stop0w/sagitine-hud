@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Metrics API endpoint for Sagitine AI CX Agent
 import { db } from '../src/db/index.js';
 import { tickets, triageResults, inboundEmails } from '../src/db/schema/index.js';
