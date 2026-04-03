@@ -49,6 +49,25 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Safe fallback response if database fails
+  const safeFallbackResponse = {
+    success: true,
+    data: {
+      total_queue: 0,
+      urgent_count: 0,
+      sent_today: 0,
+      pending_review: 0,
+      approved: 0,
+      rejected: 0,
+      queue: [],
+      categories: [],
+      _timezone: 'Australia/Sydney',
+      _fallback: true,
+      _message: 'Database unavailable - showing empty state'
+    },
+    timestamp: new Date().toISOString(),
+  };
+
   try {
     // ========================================================================
     // PART 1: Top-level metrics
@@ -196,12 +215,11 @@ export default async function handler(req, res) {
       },
       timestamp: new Date().toISOString(),
     });
+
   } catch (error: any) {
     console.error('GET /api/hub-dashboard error:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Unknown error',
-      timestamp: new Date().toISOString(),
-    });
+
+    // Return safe fallback instead of 500 error to prevent UI flickering
+    return res.status(200).json(safeFallbackResponse);
   }
 }
