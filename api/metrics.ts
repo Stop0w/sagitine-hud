@@ -1,7 +1,7 @@
 // Metrics API endpoint for Sagitine AI CX Agent
 import { db } from '../src/db';
 import { tickets, triageResults, inboundEmails } from '../src/db/schema';
-import { eq, and, gte, sql, count, or, inArray, orderBy } from 'drizzle-orm';
+import { eq, and, gte, sql, count, or, inArray, asc } from 'drizzle-orm';
 
 export const config = {
   runtime: 'nodejs',
@@ -125,7 +125,7 @@ export default async function handler(req, res) {
         .innerJoin(inboundEmails, eq(tickets.emailId, inboundEmails.id))
         .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
         .where(queueCondition)
-        .orderBy(inboundEmails.receivedAt)
+        .orderBy(asc(inboundEmails.receivedAt))
         .limit(100),
     ]);
 
