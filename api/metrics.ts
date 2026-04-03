@@ -1,6 +1,6 @@
 // Metrics API endpoint for Sagitine AI CX Agent
-import { db } from '../src/db/index.js';
-import { tickets, triageResults, inboundEmails } from '../src/db/schema.js';
+import { db } from '../src/db';
+import { tickets, triageResults, inboundEmails } from '../src/db/schema';
 import { eq, and, gte, sql, count, inArray, asc } from 'drizzle-orm';
 
 export const config = {

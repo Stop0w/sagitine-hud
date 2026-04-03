@@ -2,7 +2,7 @@
 // Retrieves relevant gold responses and snippets from Neon database
 
 import { neon } from '@neondatabase/serverless';
-import type { CanonicalCategory } from '../types.js';
+import type { CanonicalCategory } from '../types';
 
 const sql = neon(process.env.DATABASE_URL!);
 

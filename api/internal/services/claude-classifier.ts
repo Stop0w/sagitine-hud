@@ -8,11 +8,11 @@ import type {
   CanonicalCategory,
   UrgencyLevel,
   RiskLevel,
-} from '../types.js';
-import { CLAUDE_SYSTEM_PROMPT, CANONICAL_CATEGORIES } from '../types.js';
-import { getKnowledgeByCategory } from './knowledge-retrieval.js';
-import { generateResponseStrategy } from './response-strategy.js';
-import { generateDraftFromStrategy } from './draft-generation.js';
+} from '../types';
+import { CLAUDE_SYSTEM_PROMPT, CANONICAL_CATEGORIES } from '../types';
+import { getKnowledgeByCategory } from './knowledge-retrieval';
+import { generateResponseStrategy } from './response-strategy';
+import { generateDraftFromStrategy } from './draft-generation';
 
 // Initialize Anthropic client
 const anthropic = new Anthropic({

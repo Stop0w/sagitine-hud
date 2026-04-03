@@ -15,9 +15,9 @@
  * 7. Return strategy for draft generation
  */
 
-import { db } from '../../src/db/index.js';
-import { tickets, inboundEmails, triageResults, customerProfiles, customerContactFacts } from '../../src/db/schema.js';
-import { goldResponses } from '../../src/db/schema/gold-responses.js';
+import { db } from '../../src/db';
+import { tickets, inboundEmails, triageResults, customerProfiles, customerContactFacts } from '../../src/db/schema';
+import { goldResponses } from '../../src/db/schema/gold-responses';
 import { eq, and, desc, sql, or } from 'drizzle-orm';
 import Anthropic from '@anthropic-ai/sdk';
 
