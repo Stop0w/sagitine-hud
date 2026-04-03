@@ -1,7 +1,7 @@
 // Test Examples for API Classification
 // These are example payloads and expected responses for testing
 
-import type { InboundEmailPayload, ClassificationAPIResponse } from './types';
+import type { InboundEmailPayload, ClassificationAPIResponse } from './types.js';
 
 /**
  * Example 1: Damaged Item (High urgency, medium risk)

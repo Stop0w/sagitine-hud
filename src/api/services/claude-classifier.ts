@@ -10,7 +10,7 @@ import type {
   RiskLevel,
 } from '../types';
 import { CLAUDE_SYSTEM_PROMPT, CANONICAL_CATEGORIES, CATEGORY_URGENCY_DEFAULTS } from '../types';
-import { getKnowledgeByCategory } from './knowledge-retrieval';
+import { getKnowledgeByCategory } from './knowledge-retrieval.js';
 
 // Initialize Anthropic client
 const anthropic = new Anthropic({

@@ -4,8 +4,8 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { z } from 'zod';
-import { classifyEmail } from './services/claude-classifier';
-import type { InboundEmailPayload, ClassificationAPIResponse } from './types';
+import { classifyEmail } from './services/claude-classifier.js';
+import type { InboundEmailPayload, ClassificationAPIResponse } from './types.js';
 
 // Initialize Hono app
 const app = new Hono();
