@@ -1,8 +1,7 @@
-// @ts-nocheck
 // Metrics API endpoint for Sagitine AI CX Agent
-import { db } from '../src/db/index.js';
-import { tickets, triageResults, inboundEmails } from '../src/db/schema/index.js';
-import { eq, and, gte, sql, count, or, inArray, asc } from 'drizzle-orm';
+import { db } from '../src/db';
+import { tickets, triageResults, inboundEmails } from '../src/db/schema';
+import { eq, and, gte, sql, count, inArray, asc } from 'drizzle-orm';
 
 export const config = {
   runtime: 'nodejs',
