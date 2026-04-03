@@ -7,34 +7,6 @@ export const config = {
   runtime: 'nodejs',
 };
 
-// Helper SQL condition for HUD-visible tickets
-const HUD_VISIBLE_CONDITION = sql`
-  (
-    tickets.status NOT IN ('archived', 'rejected')
-    AND tickets.send_status != 'sent'
-  )
-`;
-
-const CATEGORY_LABELS: Record<string, string> = {
-  damaged_missing_faulty: 'Damaged & Faulty',
-  shipping_delivery_order_issue: 'Shipping & Delivery',
-  product_usage_guidance: 'Product Usage',
-  pre_purchase_question: 'Pre-Purchase',
-  return_refund_exchange: 'Return & Refund',
-  stock_availability: 'Stock Availability',
-  partnership_wholesale_press: 'Partnership & Press',
-  brand_feedback_general: 'Brand Feedback',
-  spam_solicitation: 'Spam & Solicitation',
-  other_uncategorized: 'Other',
-  account_billing_payment: 'Account & Billing',
-  order_modification_cancellation: 'Order Modification',
-  praise_testimonial_ugc: 'Praise & Feedback',
-};
-
-function getCategoryLabel(categoryEnum: string): string {
-  return CATEGORY_LABELS[categoryEnum] || categoryEnum;
-}
-
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -49,134 +21,56 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Safe fallback response if database fails
-  const safeFallbackResponse = {
-    success: true,
-    data: {
-      total_queue: 0,
-      urgent_count: 0,
-      sent_today: 0,
-      pending_review: 0,
-      approved: 0,
-      rejected: 0,
-      queue: [],
-      categories: [],
-      _timezone: 'Australia/Sydney',
-      _fallback: true,
-      _message: 'Database unavailable - showing empty state'
-    },
-    timestamp: new Date().toISOString(),
-  };
-
   try {
-    // ========================================================================
-    // PART 1: Top-level metrics
-    // ========================================================================
+    console.log('Fetching dashboard data...');
+
+    // Simple test query first
     const [totalOpen] = await db
       .select({ count: sql<number>`COUNT(*)` })
-      .from(tickets)
-      .where(HUD_VISIBLE_CONDITION);
+      .from(tickets);
+
+    console.log('Total tickets:', totalOpen);
 
     const [urgentCount] = await db
       .select({ count: sql<number>`COUNT(*)` })
       .from(tickets)
       .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
-      .where(
-        and(
-          HUD_VISIBLE_CONDITION,
-          sql`(urgency >= 7 OR risk_level = 'high')`
-        )
-      );
+      .where(sql`urgency >= 7`);
 
-    // Calculate criticality level
-    let criticality = 'NOMINAL';
-    const totalCount = Number(totalOpen.count);
-    const urgentCountNum = Number(urgentCount.count);
-    if (totalCount > 0) {
-      const urgentRatio = urgentCountNum / totalCount;
-      if (urgentRatio > 0.3) criticality = 'CRITICAL';
-      else if (urgentRatio > 0.15) criticality = 'ELEVATED';
-    }
+    console.log('Urgent tickets:', urgentCount);
 
-    // ========================================================================
-    // PART 2: Category breakdown
-    // ========================================================================
     const categoryData = await db
       .select({
         category: triageResults.categoryPrimary,
         count: sql<number>`COUNT(*)`.as('count'),
-        avgUrgency: sql<number>`AVG(${triageResults.urgency})`.as('avg_urgency'),
-        avgConfidence: sql<number>`AVG(${triageResults.confidence})`.as('avg_confidence'),
       })
       .from(tickets)
       .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
-      .where(HUD_VISIBLE_CONDITION)
       .groupBy(triageResults.categoryPrimary);
 
-    // Build category map
-    const categoryMap = new Map();
-    for (const c of categoryData) {
-      categoryMap.set(c.category, c);
-    }
-
-    // Build complete category breakdown (all 13 categories)
-    const allCategories = Object.keys(CATEGORY_LABELS).map(categoryEnum => {
-      const existing = categoryMap.get(categoryEnum);
-
-      // Determine urgency level from avg urgency (or default to 'low' if no tickets)
-      let urgency = 'low';
-      const avgUrgency = existing?.avgUrgency || 0;
-      if (avgUrgency >= 7) urgency = 'high';
-      else if (avgUrgency >= 4) urgency = 'medium';
-
-      return {
-        category: categoryEnum,
-        categoryLabel: getCategoryLabel(categoryEnum),
-        count: existing ? Number(existing.count) : 0,
-        urgency,
-        avgConfidence: existing ? Number(existing.avgConfidence) : 0,
-      };
-    });
-
-    // ========================================================================
-    // PART 3: Fetch queue tickets (progressive disclosure)
-    // Limited to most recent 50 tickets
-    // ========================================================================
-    const riskOrder = sql`
-      CASE risk_level
-        WHEN 'high' THEN 1
-        WHEN 'medium' THEN 2
-        WHEN 'low' THEN 3
-        ELSE 4
-      END
-    `;
+    console.log('Categories found:', categoryData.length);
 
     const allTickets = await db
       .select({
         id: tickets.id,
-        status: tickets.status,
-        sendStatus: tickets.sendStatus,
         fromEmail: inboundEmails.fromEmail,
         fromName: inboundEmails.fromName,
         subject: inboundEmails.subject,
         bodyPlain: inboundEmails.bodyPlain,
+        receivedAt: inboundEmails.receivedAt,
         category: triageResults.categoryPrimary,
-        confidence: triageResults.confidence,
         urgency: triageResults.urgency,
         riskLevel: triageResults.riskLevel,
-        receivedAt: inboundEmails.receivedAt,
-        createdAt: tickets.createdAt,
+        status: tickets.status,
       })
       .from(tickets)
       .innerJoin(inboundEmails, eq(tickets.emailId, inboundEmails.id))
       .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
-      .where(HUD_VISIBLE_CONDITION)
-      .orderBy(desc(triageResults.urgency))
-      .orderBy(riskOrder)
-      .orderBy(inboundEmails.receivedAt)
+      .orderBy(desc(inboundEmails.receivedAt))
       .limit(50);
 
-    // Add category labels and calculate waiting minutes
+    console.log('Tickets found:', allTickets.length);
+
     const enrichedTickets = allTickets.map(t => {
       const received = new Date(t.receivedAt);
       const now = new Date();
@@ -197,29 +91,51 @@ export default async function handler(req, res) {
       };
     });
 
-    // ========================================================================
-    // COMBINED RESPONSE
-    // ========================================================================
+    console.log('Returning dashboard data with', enrichedTickets.length, 'tickets');
+
     return res.status(200).json({
       success: true,
       data: {
-        total_queue: totalCount,
-        urgent_count: urgentCountNum,
-        sent_today: 0, // Placeholder - can be calculated from sent_at timestamp
-        pending_review: totalCount, // All open tickets need review
+        total_queue: Number(totalOpen.count),
+        urgent_count: Number(urgentCount.count),
+        sent_today: 0,
+        pending_review: Number(totalOpen.count),
         approved: 0,
         rejected: 0,
         queue: enrichedTickets,
-        categories: allCategories,
+        categories: categoryData.map((c: any) => ({
+          category: c.category,
+          categoryLabel: c.category,
+          count: Number(c.count),
+          urgency: 'low',
+          avgConfidence: 0.75,
+        })),
         _timezone: 'Australia/Sydney',
       },
       timestamp: new Date().toISOString(),
     });
 
   } catch (error: any) {
-    console.error('GET /api/hub-dashboard error:', error);
+    console.error('ERROR in /api/hub-dashboard:', error);
+    console.error('Error stack:', error.stack);
 
-    // Return safe fallback instead of 500 error to prevent UI flickering
-    return res.status(200).json(safeFallbackResponse);
+    // Return safe fallback
+    return res.status(200).json({
+      success: true,
+      data: {
+        total_queue: 0,
+        urgent_count: 0,
+        sent_today: 0,
+        pending_review: 0,
+        approved: 0,
+        rejected: 0,
+        queue: [],
+        categories: [],
+        _timezone: 'Australia/Sydney',
+        _fallback: true,
+        _error: error.message
+      },
+      timestamp: new Date().toISOString(),
+    });
   }
 }
