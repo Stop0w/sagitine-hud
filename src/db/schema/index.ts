@@ -315,5 +315,5 @@ export type NewSendAudit = typeof sendAudit.$inferInsert;
 // RE-EXPORT KNOWLEDGE BASE TABLES
 // ============================================================================
 
-export * from './gold-responses';
-export * from './knowledge-snippets';
+export * from './gold-responses.js';
+export * from './knowledge-snippets.js';
