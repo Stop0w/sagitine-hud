@@ -19,6 +19,14 @@ interface ApiMetricsResponse {
     urgency: number;
     risk_level: string;
     status: string;
+    waitingMinutes: number;
+  }>;
+  categories?: Array<{
+    category: string;
+    categoryLabel: string;
+    count: number;
+    urgency: 'low' | 'medium' | 'high';
+    avgConfidence: number;
   }>;
 }
 
@@ -100,11 +108,11 @@ const CATEGORY_CONFIG: Record<string, { label: string; shortLabel: string; urgen
  * This bridges the gap between the real API response structure
  * and the UI component's expected data structure.
  *
- * @param apiResponse - Raw response from /api/metrics
+ * @param apiResponse - Raw response from /api/hub/dashboard
  * @returns HubMvpData compatible with NotificationHub components
  */
 export function transformApiToHubData(apiResponse: ApiMetricsResponse): HubMvpData {
-  const { total_queue, urgent_count, sent_today, pending_review, approved, rejected, queue } = apiResponse;
+  const { total_queue, urgent_count, sent_today, pending_review, approved, rejected, queue, categories: apiCategories } = apiResponse;
 
   // Group tickets by category
   const ticketsByCategory: Record<string, typeof queue> = {};
@@ -116,47 +124,84 @@ export function transformApiToHubData(apiResponse: ApiMetricsResponse): HubMvpDa
   });
 
   // Build categories list with counts and metadata
-  const categories: CategorySummaryItem[] = Object.keys(CATEGORY_CONFIG).map(categoryId => {
-    const categoryTickets = ticketsByCategory[categoryId] || [];
-    const config = CATEGORY_CONFIG[categoryId];
+  // Use API categories if available, otherwise fall back to calculation
+  let categories: CategorySummaryItem[];
 
-    // Calculate average confidence (placeholder - will come from API later)
-    const avgConfidence = categoryTickets.length > 0
-      ? categoryTickets.reduce((sum, t) => sum + (t.urgency / 10), 0) / categoryTickets.length
-      : 0;
+  if (apiCategories && apiCategories.length > 0) {
+    // Use API-provided categories (more accurate)
+    categories = apiCategories.map(cat => {
+      const categoryTickets = ticketsByCategory[cat.category] || [];
+      const config = CATEGORY_CONFIG[cat.category] || { label: cat.categoryLabel, shortLabel: cat.categoryLabel.substring(0, 10), urgency: cat.urgency };
 
-    // Calculate average age in minutes
-    const now = new Date();
-    const avgAgeMinutes = categoryTickets.length > 0
-      ? categoryTickets.reduce((sum, t) => {
-          const received = new Date(t.received_at);
-          const minutes = (now.getTime() - received.getTime()) / 60000;
-          return sum + minutes;
-        }, 0) / categoryTickets.length
-      : 0;
+      // Calculate average age in minutes from actual tickets
+      const now = new Date();
+      const avgAgeMinutes = categoryTickets.length > 0
+        ? categoryTickets.reduce((sum, t) => {
+            const received = new Date(t.received_at);
+            const minutes = (now.getTime() - received.getTime()) / 60000;
+            return sum + minutes;
+          }, 0) / categoryTickets.length
+        : 0;
 
-    // Check if any tickets in this category are new (not reviewed yet)
-    const hasNew = categoryTickets.some(t => t.status === 'new' || t.status === 'classified');
+      // Check if any tickets in this category are new (not reviewed yet)
+      const hasNew = categoryTickets.some(t => t.status === 'new' || t.status === 'classified');
 
-    return {
-      id: categoryId,
-      label: config.label,
-      shortLabel: config.shortLabel,
-      count: categoryTickets.length,
-      urgency: config.urgency,
-      hasNew,
-      avgConfidence,
-      avgAgeMinutes: Math.round(avgAgeMinutes),
-    };
-  });
+      return {
+        id: cat.category,
+        label: cat.categoryLabel,
+        shortLabel: config.shortLabel,
+        count: cat.count,
+        urgency: cat.urgency,
+        hasNew,
+        avgConfidence: cat.avgConfidence,
+        avgAgeMinutes: Math.round(avgAgeMinutes),
+      };
+    });
+  } else {
+    // Fallback: Calculate categories locally (legacy behavior)
+    categories = Object.keys(CATEGORY_CONFIG).map(categoryId => {
+      const categoryTickets = ticketsByCategory[categoryId] || [];
+      const config = CATEGORY_CONFIG[categoryId];
+
+      // Calculate average confidence (placeholder - will come from API later)
+      const avgConfidence = categoryTickets.length > 0
+        ? categoryTickets.reduce((sum, t) => sum + (t.urgency / 10), 0) / categoryTickets.length
+        : 0;
+
+      // Calculate average age in minutes
+      const now = new Date();
+      const avgAgeMinutes = categoryTickets.length > 0
+        ? categoryTickets.reduce((sum, t) => {
+            const received = new Date(t.received_at);
+            const minutes = (now.getTime() - received.getTime()) / 60000;
+            return sum + minutes;
+          }, 0) / categoryTickets.length
+        : 0;
+
+      // Check if any tickets in this category are new (not reviewed yet)
+      const hasNew = categoryTickets.some(t => t.status === 'new' || t.status === 'classified');
+
+      return {
+        id: categoryId,
+        label: config.label,
+        shortLabel: config.shortLabel,
+        count: categoryTickets.length,
+        urgency: config.urgency,
+        hasNew,
+        avgConfidence,
+        avgAgeMinutes: Math.round(avgAgeMinutes),
+      };
+    });
+  }
 
   // Build queueByCategory (map of category ID to ticket list)
   const queueByCategory: HubMvpData['queueByCategory'] = {};
   Object.entries(ticketsByCategory).forEach(([categoryId, tickets]) => {
     queueByCategory[categoryId] = tickets.map(ticket => {
-      const received = new Date(ticket.received_at);
-      const now = new Date();
-      const waitingMinutes = Math.round((now.getTime() - received.getTime()) / 60000);
+      // Use waitingMinutes from API if available, otherwise calculate
+      const waitingMinutes = 'waitingMinutes' in ticket
+        ? (ticket as any).waitingMinutes
+        : Math.round((Date.now() - new Date(ticket.received_at).getTime()) / 60000);
 
       return {
         id: ticket.id,
@@ -178,9 +223,10 @@ export function transformApiToHubData(apiResponse: ApiMetricsResponse): HubMvpDa
   // Build consoleByTicketId (detailed ticket view for right panel)
   const consoleByTicketId: HubMvpData['consoleByTicketId'] = {};
   queue.forEach(ticket => {
-    const received = new Date(ticket.received_at);
-    const now = new Date();
-    const waitingMinutes = Math.round((now.getTime() - received.getTime()) / 60000);
+    // Use waitingMinutes from API if available, otherwise calculate
+    const waitingMinutes = 'waitingMinutes' in ticket
+      ? (ticket as any).waitingMinutes
+      : Math.round((Date.now() - new Date(ticket.received_at).getTime()) / 60000);
 
     consoleByTicketId[ticket.id] = {
       ticket: {

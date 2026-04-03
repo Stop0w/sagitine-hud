@@ -16,7 +16,7 @@ function App() {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Fetch real data from API
-  const { data: apiData, loading, error } = useSagitineSync('/api/metrics', {
+  const { data: apiData, loading, error } = useSagitineSync('/api/hub/dashboard', {
     pollingIntervalMs: 10000, // Poll every 10 seconds
     enabled: true,
   });
