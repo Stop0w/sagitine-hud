@@ -115,7 +115,7 @@ export function transformApiToHubData(apiResponse: ApiMetricsResponse): HubMvpDa
   const { total_queue, urgent_count, sent_today, pending_review, approved, rejected, queue, categories: apiCategories } = apiResponse;
 
   // Group tickets by category
-  const ticketsByCategory: Record<string, typeof queue> = {};
+  const ticketsByCategory: Record<string, any[]> = {};
   queue.forEach(ticket => {
     if (!ticketsByCategory[ticket.category]) {
       ticketsByCategory[ticket.category] = [];
@@ -197,10 +197,10 @@ export function transformApiToHubData(apiResponse: ApiMetricsResponse): HubMvpDa
   // Build queueByCategory (map of category ID to ticket list)
   const queueByCategory: HubMvpData['queueByCategory'] = {};
   Object.entries(ticketsByCategory).forEach(([categoryId, tickets]) => {
-    queueByCategory[categoryId] = tickets.map(ticket => {
+    queueByCategory[categoryId] = tickets.map((ticket: any) => {
       // Use waitingMinutes from API if available, otherwise calculate
       const waitingMinutes = 'waitingMinutes' in ticket
-        ? (ticket as any).waitingMinutes
+        ? ticket.waitingMinutes
         : Math.round((Date.now() - new Date(ticket.received_at).getTime()) / 60000);
 
       return {
@@ -222,10 +222,10 @@ export function transformApiToHubData(apiResponse: ApiMetricsResponse): HubMvpDa
 
   // Build consoleByTicketId (detailed ticket view for right panel)
   const consoleByTicketId: HubMvpData['consoleByTicketId'] = {};
-  queue.forEach(ticket => {
+  queue.forEach((ticket: any) => {
     // Use waitingMinutes from API if available, otherwise calculate
     const waitingMinutes = 'waitingMinutes' in ticket
-      ? (ticket as any).waitingMinutes
+      ? ticket.waitingMinutes
       : Math.round((Date.now() - new Date(ticket.received_at).getTime()) / 60000);
 
     consoleByTicketId[ticket.id] = {

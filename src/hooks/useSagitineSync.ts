@@ -18,6 +18,14 @@ interface HubData {
     urgency: number;
     risk_level: string;
     status: string;
+    waitingMinutes: number;
+  }>;
+  categories?: Array<{
+    category: string;
+    categoryLabel: string;
+    count: number;
+    urgency: 'low' | 'medium' | 'high';
+    avgConfidence: number;
   }>;
 }
 
