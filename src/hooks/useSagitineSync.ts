@@ -161,7 +161,10 @@ export function useSagitineSync(
     }
 
     // Initial fetch (with loading state)
-    fetchData(false);
+    fetchData(false).catch((err) => {
+      // Error already handled in fetchData
+      console.error('Initial fetch error safely handled:', err);
+    });
 
     // Polling interval (silent, no loading flash)
     pollingRef.current = setInterval(async () => {
