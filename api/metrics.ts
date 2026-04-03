@@ -1,41 +1,15 @@
 // @ts-nocheck
-import { neon } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-http';
-import { eq, and, gte, sql, count, inArray, asc } from 'drizzle-orm';
+// Metrics API endpoint for Sagitine AI CX Agent
+import { db } from '../src/db';
+import { tickets } from '../src/db/schema';
+import { count } from 'drizzle-orm';
 
 export const config = {
   runtime: 'nodejs',
 };
 
-// Inline schema to avoid import issues
-const schema = {
-  tickets: {
-    id: 'id',
-    status: 'status',
-    sendStatus: 'send_status',
-    triageResultId: 'triage_result_id',
-    emailId: 'email_id',
-    sentAt: 'sent_at',
-    createdAt: 'created_at',
-  },
-  triageResults: {
-    id: 'id',
-    categoryPrimary: 'category_primary',
-    urgency: 'urgency',
-    riskLevel: 'risk_level',
-  },
-  inboundEmails: {
-    id: 'id',
-    fromEmail: 'from_email',
-    fromName: 'from_name',
-    subject: 'subject',
-    bodyPlain: 'body_plain',
-    receivedAt: 'received_at',
-  }
-};
-
 export default async function handler(req, res) {
-  console.log('[METRICS] Direct DB connection test invoked');
+  console.log('[METRICS] With imports and simple query');
 
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -46,16 +20,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('[METRICS] Testing direct DB connection...');
-    const sql = neon(process.env.DATABASE_URL);
-    const db_conn = drizzle(sql, { schema });
-
-    const result = await db_conn
+    console.log('[METRICS] Testing DB query...');
+    const result = await db
       .select({ count: count() })
-      .from(schema.tickets)
+      .from(tickets)
       .limit(1);
 
-    console.log('[METRICS] DB test successful:', result);
+    console.log('[METRICS] Query successful:', result);
 
     return res.status(200).json({
       success: true,
@@ -70,7 +41,6 @@ export default async function handler(req, res) {
         _timezone: 'Australia/Sydney',
       },
       timestamp: new Date().toISOString(),
-      version: 'direct-db-connection'
     });
   } catch (error) {
     console.error('[METRICS] Error:', error);
