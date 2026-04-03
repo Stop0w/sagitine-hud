@@ -100,7 +100,11 @@ export function useSagitineSync(
         throw new Error('Invalid API response structure');
       }
 
-      setData(result.data);
+      // Only update state if valid data is returned
+      if (result.data && (Array.isArray(result.data) ? result.data.length > 0 : Object.keys(result.data).length > 0)) {
+        setData(result.data);
+      }
+      // If data is empty or null: do nothing, keep current display
       setError(null);
 
     } catch (err: any) {
@@ -109,6 +113,7 @@ export function useSagitineSync(
         return;
       }
 
+      // Do NOT call setData here — keep existing UI intact
       const errorMessage = err.message || 'Unknown error';
       setError(errorMessage);
       console.error('useSagitineSync fetch error:', errorMessage);
@@ -151,8 +156,12 @@ export function useSagitineSync(
     fetchData(false);
 
     // Polling interval (silent, no loading flash)
-    pollingRef.current = setInterval(() => {
-      fetchData(true); // Silent fetch
+    pollingRef.current = setInterval(async () => {
+      try {
+        await fetchData(true); // Silent fetch
+      } catch (err) {
+        // Silently swallow — already logged inside fetchData
+      }
     }, pollingIntervalMs);
 
     // Cleanup: cancel pending requests and clear interval

@@ -1,7 +1,7 @@
 // Test endpoint for new classification system
-import type { InboundEmailPayload } from '../src/api/types';
-import { classifyEmail } from './internal/services/classification-engine';
-import { generateDraft } from './internal/services/template-lookup';
+import type { InboundEmailPayload } from '../src/api/types.js';
+import { classifyEmail } from './internal/services/classification-engine.js';
+import { generateDraft } from './internal/services/template-lookup.js';
 
 export default async function handler(req: any, res: any) {
   // CORS headers

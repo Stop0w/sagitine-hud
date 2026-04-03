@@ -13,8 +13,8 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import type { ResponseStrategy, StrategyContext } from './response-strategy';
-import { applySagitoneTOVCleanup, generateTOVPrompt, SAGITINE_SIGN_OFF } from '../config/sagitine-tov';
+import type { ResponseStrategy, StrategyContext } from './response-strategy.js';
+import { applySagitoneTOVCleanup, generateTOVPrompt, SAGITINE_SIGN_OFF } from '../config/sagitine-tov.js';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,

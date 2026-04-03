@@ -1,16 +1,16 @@
 // Enhanced mock classification for Make.com workflow testing
 // Uses keyword-based logic until real Claude runtime is fixed
-import type { InboundEmailPayload, ClassificationAPIResponse } from '../src/api/types';
-import { db } from '../src/db';
-import { inboundEmails, triageResults, tickets } from '../src/db/schema';
+import type { InboundEmailPayload, ClassificationAPIResponse } from '../../src/api/types.js';
+import { db } from '../../src/db/index.js';
+import { inboundEmails, triageResults, tickets } from '../../src/db/schema.js';
 import { eq } from 'drizzle-orm';
 import {
   findOrCreateProfile,
   recordInboundContactFact,
   updateProfileRollups,
-} from '../src/api/services/customer-profile-service';
-import { generateResponseStrategy } from './services/response-strategy';
-import { generateDraftFromStrategy } from './services/draft-generation';
+} from '../../src/api/services/customer-profile-service.js';
+import { generateResponseStrategy } from './services/response-strategy.js';
+import { generateDraftFromStrategy } from './services/draft-generation.js';
 
 function classifyEmail(payload: InboundEmailPayload) {
   const customerName = payload.from_name || 'Customer';

@@ -3,8 +3,8 @@
 //
 // Usage: POST /api/tickets-send-status?id=<outlook-message-id>
 // Body: { "sent_at": "2024-04-02T10:30:00Z", "sent_by": "Heidi" }
-import { db } from '../src/db';
-import { tickets, inboundEmails } from '../src/db/schema';
+import { db } from '../src/db/index.js';
+import { tickets, inboundEmails } from '../src/db/schema.js';
 import { eq } from 'drizzle-orm';
 
 export const config = {

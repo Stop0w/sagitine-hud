@@ -1,16 +1,16 @@
 // Hub API endpoints for Sagitine AI CX Agent
 // Progressive hydration model for Notification HUD + Resolution Console
-import { db } from '../src/db';
-import { tickets, inboundEmails, triageResults, customerProfiles, customerContactFacts, draftProofs, sendAudit } from '../src/db/schema';
-import { responseStrategies } from '../src/db/schema/gold-responses';
+import { db } from '../../src/db/index.js';
+import { tickets, inboundEmails, triageResults, customerProfiles, customerContactFacts, draftProofs, sendAudit } from '../../src/db/schema.js';
+import { responseStrategies } from '../../src/db/schema/gold-responses.js';
 import { eq, desc, and, gte, sql, ne } from 'drizzle-orm';
 import Anthropic from '@anthropic-ai/sdk';
-import { generateResponseStrategy } from '../services/response-strategy';
+import { generateResponseStrategy } from '../services/response-strategy.js';
 import {
   generateTOVProofingChecklist,
   applySagitoneTOVCleanup,
   assessBrandCompliance,
-} from '../config/sagitine-tov';
+} from '../config/sagitine-tov.js';
 
 export const config = {
   runtime: 'nodejs',
