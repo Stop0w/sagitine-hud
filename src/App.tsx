@@ -3,12 +3,9 @@
 import { useState, useRef } from "react";
 import { NotificationPill } from "./features/notification-hub/components/NotificationPill";
 import { NotificationHub } from "./features/notification-hub/components/NotificationHub";
-import { mockHubData } from "./features/notification-hub/data/mock-data";
-import { mockHubMvpData } from "./features/notification-hub/data/mvp-mock-data";
+import { useSagitineSync } from "./hooks/useSagitineSync";
+import { transformApiToHubData } from "./lib/data-transformer";
 import type { HubView } from "./features/notification-hub/types";
-
-const UI_MODE = import.meta.env.VITE_UI_MODE || 'mvp'; // Defaulting to MVP locally
-const activeHubData = UI_MODE === 'mvp' ? mockHubMvpData : mockHubData;
 
 function App() {
   const pillRef = useRef<HTMLButtonElement>(null);
@@ -17,6 +14,15 @@ function App() {
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Fetch real data from API
+  const { data: apiData, loading, error } = useSagitineSync('/api/metrics', {
+    pollingIntervalMs: 10000, // Poll every 10 seconds
+    enabled: true,
+  });
+
+  // Transform API response into UI format (use mock data as fallback)
+  const activeHubData = apiData ? transformApiToHubData(apiData) : null;
 
   const handleNavigate = (
     view: HubView,
@@ -43,32 +49,127 @@ function App() {
     <>
       {/* Main page content */}
       <div className="min-h-screen bg-[#f3f3f3] text-on-surface">
-        {/* Example page content matching reference design */}
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="flex flex-col gap-1 mb-12">
-            <span className="font-sans text-[10px] tracking-[0.2em] uppercase text-outline">System Overview / Active Node</span>
-            <h1 className="font-serif text-6xl tracking-tighter text-primary">Workspace Alpha</h1>
+        {/* Hero section with visual flair */}
+        <div className="max-w-7xl mx-auto px-6 py-16">
+          {/* Header with branding and visual element */}
+          <div className="flex items-start justify-between mb-16">
+            <div className="flex-1">
+              <div className="flex flex-col gap-2 mb-6">
+                <span className="font-sans text-[10px] tracking-[0.2em] uppercase text-outline">Customer Service Command Center</span>
+                <h1 className="font-serif text-7xl tracking-tighter text-primary leading-[0.95]">Sagitine Customer Service HUD</h1>
+              </div>
+
+              {/* One-line instruction */}
+              <p className="font-sans text-lg text-on-surface-variant max-w-2xl leading-relaxed">
+                Review AI-classified customer emails, approve draft responses, and manage queue priority — all in real-time.
+              </p>
+            </div>
+
+            {/* Treasure chest image as visual anchor */}
+            <div className="hidden md:block ml-12 flex-shrink-0">
+              <img
+                src="/2303 Treasure Chest01102 square.JPG"
+                alt="Sagitine Treasure Chest"
+                className="w-48 h-48 object-cover rounded-[3rem] shadow-2xl"
+              />
+            </div>
           </div>
-          <div className="bg-surface-container-low p-8 border-l-4 border-primary">
-            <p className="font-sans text-sm text-on-surface-variant">
-              Sagitine AI CX Agent HUD System - Phase 1 Implementation<br/>
-              Status: Active • Queue: {activeHubData.metrics.totalOpen} total • {activeHubData.metrics.urgentCount} urgent
-               <span className="ml-4 font-bold text-[10px] tracking-widest text-[#0078D4]">[{UI_MODE.toUpperCase()} MODE]</span>
-            </p>
+
+          {/* Status card with simplified messaging */}
+          <div className="bg-surface-container-low p-10 border-l-4 border-primary rounded-[2rem] shadow-sm">
+            {error ? (
+              <div className="space-y-2">
+                <p className="font-sans text-sm text-error font-medium">
+                  ⚠️ Unable to connect to server
+                </p>
+                <p className="font-sans text-xs text-on-surface-variant">
+                  Check your connection and try again
+                </p>
+              </div>
+            ) : loading ? (
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                <p className="font-sans text-sm text-on-surface-variant">
+                  Connecting to Sagitne servers...
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Main status message */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-sans text-xl text-primary font-medium mb-1">
+                      {activeHubData?.metrics.totalOpen || 0} emails in queue
+                    </p>
+                    <p className="font-sans text-sm text-on-surface-variant">
+                      {activeHubData?.metrics.urgentCount || 0} require urgent attention • Updated just now
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="inline-block px-4 py-2 bg-green-100 text-green-800 rounded-full font-sans text-xs font-bold tracking-wide">
+                      ● LIVE
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quick action guide */}
+                <div className="pt-6 border-t border-surface-container-high">
+                  <p className="font-sans text-xs text-on-surface-variant uppercase tracking-wider mb-3">
+                    Quick Start
+                  </p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-white p-4 rounded-xl">
+                      <p className="font-sans text-xs text-primary font-medium mb-1">Step 1</p>
+                      <p className="font-sans text-sm text-on-surface">Click notification icon to open queue</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl">
+                      <p className="font-sans text-xs text-primary font-medium mb-1">Step 2</p>
+                      <p className="font-sans text-sm text-on-surface">Review classification & draft response</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl">
+                      <p className="font-sans text-xs text-primary font-medium mb-1">Step 3</p>
+                      <p className="font-sans text-sm text-on-surface">Approve or edit before sending</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Additional info card */}
+          <div className="mt-8 bg-white p-6 rounded-[2rem] border border-surface-container-high">
+            <div className="flex items-start gap-4">
+              <div className="text-3xl"><img
+                src="/sagitine-logo.png"
+                alt="Sagitine"
+                width={50}
+                height={50}
+              /></div>
+              <div>
+                <p className="font-sans text-sm text-on-surface font-medium mb-2">
+                  Sagitine Heads Up Display
+                </p>
+                <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
+                  Each message is thoughtfully reviewed and gently guided into the right place, with a considered draft prepared in our tone, ready for a final human touch.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* NotificationPill - embedded in page */}
-        <NotificationPill
-          ref={pillRef}
-          count={activeHubData.metrics.totalOpen}
-          urgentCount={activeHubData.metrics.urgentCount}
-          onClick={() => setIsHubOpen(true)}
-          isOpen={isHubOpen}
-        />
+        {activeHubData && (
+          <NotificationPill
+            ref={pillRef}
+            count={activeHubData.metrics.totalOpen}
+            urgentCount={activeHubData.metrics.urgentCount}
+            onClick={() => setIsHubOpen(true)}
+            isOpen={isHubOpen}
+          />
+        )}
 
         {/* NotificationHub - embedded in page layout (not a modal) */}
-        {isHubOpen && (
+        {isHubOpen && activeHubData && (
           <NotificationHub
             isOpen={isHubOpen}
             currentView={currentView}

@@ -1,7 +1,7 @@
 // Metrics API endpoint for Sagitine AI CX Agent
 import { db } from '../src/db';
-import { tickets, triageResults } from '../src/db/schema';
-import { eq, and, gte, sql, count, or, inArray } from 'drizzle-orm';
+import { tickets, triageResults, inboundEmails } from '../src/db/schema';
+import { eq, and, gte, sql, count, or, inArray, orderBy } from 'drizzle-orm';
 
 export const config = {
   runtime: 'nodejs',
@@ -58,6 +58,7 @@ export default async function handler(req, res) {
       pendingReviewResult,
       approvedResult,
       rejectedResult,
+      queueData,
     ] = await Promise.all([
       // Total queue: new or classified, not yet sent
       db
@@ -105,6 +106,27 @@ export default async function handler(req, res) {
         .select({ count: count() })
         .from(tickets)
         .where(eq(tickets.status, 'rejected')),
+
+      // Queue data: full ticket details for the UI
+      db
+        .select({
+          id: tickets.id,
+          fromEmail: inboundEmails.fromEmail,
+          fromName: inboundEmails.fromName,
+          subject: inboundEmails.subject,
+          bodyPlain: inboundEmails.bodyPlain,
+          receivedAt: inboundEmails.receivedAt,
+          category: triageResults.categoryPrimary,
+          urgency: triageResults.urgency,
+          riskLevel: triageResults.riskLevel,
+          status: tickets.status,
+        })
+        .from(tickets)
+        .innerJoin(inboundEmails, eq(tickets.emailId, inboundEmails.id))
+        .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
+        .where(queueCondition)
+        .orderBy(inboundEmails.receivedAt)
+        .limit(100),
     ]);
 
     const metrics = {
@@ -114,6 +136,18 @@ export default async function handler(req, res) {
       pending_review: pendingReviewResult[0]?.count || 0,
       approved: approvedResult[0]?.count || 0,
       rejected: rejectedResult[0]?.count || 0,
+      queue: queueData.map(t => ({
+        id: t.id,
+        from_email: t.fromEmail,
+        from_name: t.fromName,
+        subject: t.subject,
+        body_plain: t.bodyPlain,
+        received_at: t.receivedAt?.toISOString() || new Date().toISOString(),
+        category: t.category,
+        urgency: t.urgency,
+        risk_level: t.riskLevel,
+        status: t.status,
+      })),
       _timezone: 'Australia/Sydney',
     };
 
