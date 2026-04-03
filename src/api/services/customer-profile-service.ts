@@ -1,8 +1,8 @@
 // Customer Profile Service
 // Lightweight customer service profile management for Sagitine AI CX Agent
 import { db } from '../../db';
-import { customerProfiles, customerContactFacts, tickets, inboundEmails } from '../../db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { customerProfiles, customerContactFacts, tickets } from '../../db/schema';
+import { eq, sql } from 'drizzle-orm';
 import type { CanonicalCategory, RiskLevel } from '../types';
 
 // ============================================================================
@@ -282,7 +282,7 @@ export async function updateOutboundActivity(
       .set({
         lastContactAt: sentAt,
         lastContactOutcome: 'sent',
-        updated_at: new Date(),
+        updatedAt: new Date(),
       })
       .where(eq(customerProfiles.id, profileId));
   } catch (error) {

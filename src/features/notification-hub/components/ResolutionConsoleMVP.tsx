@@ -25,18 +25,19 @@ export function ResolutionConsoleMVP({
   onSharedStateChange,
 }: ResolutionConsoleMVPProps) {
   const { ticket, customer, message, triage, ui, strategy } = data;
-  
+
   const requiresApproval = strategy?.requiresManagementApproval === true;
-  
+
   // Strict MVP Local State Machine
   const [proofState, setProofState] = useState<ProofState>('not_proofed');
   const [proofResult, setProofResult] = useState<ProofResponse | null>(null);
-  
+  const [correctionsApplied, setCorrectionsApplied] = useState<boolean>(false);
+
   const [isEditing, setIsEditing] = useState(false);
   const [editedResponse, setEditedResponse] = useState<string>(triage.draftResponse || '');
   const [hasEverBeenEdited, setHasEverBeenEdited] = useState(false);
   const [lastProofedDraft, setLastProofedDraft] = useState<string>('');
-  
+
   // 1. Invalidation Flow
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
@@ -93,44 +94,43 @@ export function ResolutionConsoleMVP({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ draftText: text, operatorEdited: hasEverBeenEdited })
     });
-    
+
     if (!response.ok) throw new Error('Proofing endpoint failed');
     return response.json();
   };
-  
+
   const apiSubmitApproval = async (finalText: string) => {
     // Development-only mock fallback
     // @ts-ignore
     if (import.meta.env.DEV && import.meta.env.VITE_MOCK_PROOFING === 'true') {
       return new Promise((resolve) => setTimeout(resolve, 1200));
     }
-    
+
     // Production explicit send logic
     const response = await fetch(`/api/tickets/${ticket.id}/sent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ final_message_sent: finalText })
     });
-    
+
     if (!response.ok) throw new Error('Send dispatch failed');
     return response.json();
   };
 
   const executeProof = async () => {
     const payloadText = editedResponse || triage.draftResponse || '';
-    
+
     setProofState('proofing');
     setIsEditing(false); // Close editor visually to show diff
 
     try {
       const apiResponse = await apiSubmitProof(payloadText);
       const { success, data } = apiResponse;
-      
+
       // Strict Proof validation rule
       if (success === true && (data.proofStatus === 'proofed' || data.proofStatus === 'warning')) {
-        // Immediate strict hydration
-        setEditedResponse(data.correctedDraft);
-        setLastProofedDraft(data.correctedDraft);
+        // Require explicit apply step instead of immediate hydration
+        setCorrectionsApplied(!data.changesDetected);
         setProofResult(data);
         setProofState('proofed');
       } else {
@@ -145,14 +145,14 @@ export function ResolutionConsoleMVP({
 
   const executeSend = async () => {
     if (proofState !== 'proofed') return; // Strict guard
-    
+
     const finalPayload = editedResponse; // MUST be exactly what is in the editor
-    
+
     setProofState('sending');
     try {
       await apiSubmitApproval(finalPayload);
       if (onApprove) onApprove(finalPayload);
-    } catch(e) {
+    } catch (e) {
       setProofState('send_failed');
     }
   };
@@ -192,9 +192,16 @@ export function ResolutionConsoleMVP({
   const provenance = getProvenanceLabel();
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-[#FAFAFA] relative isolate">
+      {/* Texture Layer */}
+      <svg className="pointer-events-none absolute inset-0 z-50 h-full w-full opacity-[0.04]">
+        <filter id="noise">
+          <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#noise)" />
+      </svg>
       {/* BREADCRUMB HEADER */}
-      <header className="flex items-center justify-between px-4 h-10 bg-zinc-50 border-b border-outline-variant flex-shrink-0">
+      <header className="flex items-center justify-between px-4 h-10 bg-white border-b border-outline-variant flex-shrink-0 relative z-10">
         <div className="flex items-center gap-2">
           <button
             onClick={onBack}
@@ -231,7 +238,7 @@ export function ResolutionConsoleMVP({
 
       {/* MAIN CONTENT */}
       <div className={`flex-grow flex ${isExpanded ? 'flex-row overflow-hidden' : 'flex-col overflow-y-auto'}`}>
-        
+
         {/* LEFT COLUMN - CRM & CONTEXT (Expanded View Only) */}
         {isExpanded && (
           <div className="w-[300px] flex-shrink-0 bg-surface-container-lowest border-r border-outline-variant flex flex-col h-full overflow-y-auto">
@@ -269,18 +276,18 @@ export function ResolutionConsoleMVP({
               </h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="font-body text-xs text-on-surface-variant font-medium">Total Contacts</span>
-                  <span className="font-body text-sm font-semibold text-primary">{customer.totalContactCount}</span>
+                  <span className="font-body text-xs text-zinc-500 font-medium">Total Contacts</span>
+                  <span className="font-body text-[13px] font-medium text-zinc-900">{customer.totalContactCount}</span>
                 </div>
                 {ui.showThirtyDayVolume && (
                   <div className="flex justify-between items-center">
-                    <span className="font-body text-xs text-on-surface-variant font-medium">30-Day Volume</span>
-                    <span className="font-body text-sm font-semibold text-primary">{customer.thirtyDayVolume}</span>
+                    <span className="font-body text-xs text-zinc-500 font-medium">30-Day Volume</span>
+                    <span className="font-body text-[13px] font-medium text-zinc-900">{customer.thirtyDayVolume}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">
-                  <span className="font-body text-xs text-on-surface-variant font-medium">Last Contact</span>
-                  <span className="font-body text-sm font-semibold text-primary">
+                  <span className="font-body text-xs text-zinc-500 font-medium">Last Contact</span>
+                  <span className="font-body text-[13px] font-medium text-zinc-900">
                     {customer.lastContactAt ? new Date(customer.lastContactAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : 'Never'}
                   </span>
                 </div>
@@ -288,32 +295,42 @@ export function ResolutionConsoleMVP({
                 {/* Optional Nullable Extracted Fields */}
                 {customer.lastContactCategory && (
                   <div className="flex justify-between items-center">
-                    <span className="font-body text-xs text-on-surface-variant font-medium">Last Category</span>
-                    <span className="font-body text-xs font-semibold text-primary">{customer.lastContactCategory}</span>
+                    <span className="font-body text-xs text-zinc-500 font-medium">Last Category</span>
+                    <span className="font-body text-[13px] font-medium text-zinc-900">{customer.lastContactCategory}</span>
                   </div>
                 )}
                 {customer.patternSummary && (
-                  <div className="flex flex-col gap-1 pt-1">
-                    <span className="font-body text-xs text-on-surface-variant font-medium">Pattern</span>
-                    <span className="font-body text-[11px] font-semibold text-primary leading-tight">{customer.patternSummary}</span>
+                  <div className="flex justify-between items-center gap-3">
+                    <span className="font-body text-xs text-zinc-500 font-medium flex-shrink-0">Pattern</span>
+                    <span className="font-body text-[13px] font-medium text-zinc-900 text-right leading-tight max-w-[180px]">{customer.patternSummary}</span>
                   </div>
                 )}
 
-                {/* Shopify Enrichment */}
-                {customer.shopifyOrderCount !== null && (
-                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-dashed border-outline-variant">
-                    <span className="font-body text-xs text-blue-800 font-medium">Total Orders</span>
-                    <span className="font-body text-sm font-semibold text-blue-900">{customer.shopifyOrderCount}</span>
-                  </div>
-                )}
-                {customer.shopifyLtv !== null && (
-                  <div className="flex justify-between items-center">
-                    <span className="font-body text-xs text-blue-800 font-medium">Lifetime Value</span>
-                    <span className="font-body text-sm font-semibold text-blue-900">${customer.shopifyLtv.toFixed(2)}</span>
-                  </div>
-                )}
               </div>
             </div>
+
+            {/* Customer Value */}
+            {(customer.shopifyOrderCount !== null || customer.shopifyLtv !== null) && (
+              <div className="px-5 py-4 border-b border-outline-variant">
+                <h3 className="font-label text-[10px] tracking-[0.15em] uppercase font-semibold text-zinc-500 mb-3">
+                  Customer Value
+                </h3>
+                <div className="space-y-3">
+                  {customer.shopifyOrderCount !== null && (
+                    <div className="flex justify-between items-center">
+                      <span className="font-body text-xs text-zinc-500 font-medium">Total Orders</span>
+                      <span className="font-body text-[13px] font-medium text-zinc-900">{customer.shopifyOrderCount}</span>
+                    </div>
+                  )}
+                  {customer.shopifyLtv !== null && (
+                    <div className="flex justify-between items-center">
+                      <span className="font-body text-xs text-zinc-500 font-medium">Lifetime Value</span>
+                      <span className="font-body text-[13px] font-medium text-zinc-900">${customer.shopifyLtv.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Current Inquiry Metadata */}
             <div className="px-5 py-4">
@@ -322,31 +339,31 @@ export function ResolutionConsoleMVP({
                   Current Inquiry
                 </h3>
               </div>
-              <div className="bg-white rounded border border-outline-variant p-3 space-y-2">
+              <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="font-label text-[10px] text-zinc-500">CATEGORY</span>
-                  <span className="font-label text-[10px] font-bold text-zinc-700">{ticket.categoryLabel}</span>
+                  <span className="font-body text-xs text-zinc-500 font-medium">Category</span>
+                  <span className="font-body text-[13px] font-medium text-zinc-900">{ticket.categoryLabel}</span>
                 </div>
                 {ticket.waitingMinutes !== undefined && (
                   <div className="flex justify-between items-center">
-                    <span className="font-label text-[10px] text-zinc-500">WAIT TIME</span>
-                    <span className="font-label text-[10px] font-bold text-zinc-700">{ticket.waitingMinutes} min</span>
+                    <span className="font-body text-xs text-zinc-500 font-medium">Wait Time</span>
+                    <span className="font-body text-[13px] font-medium text-zinc-900">{ticket.waitingMinutes} min</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">
-                  <span className="font-label text-[10px] text-zinc-500">URGENCY</span>
-                  <span className={`font-label text-[10px] font-bold ${getUrgencyColor(ticket.urgency)}`}>
+                  <span className="font-body text-xs text-zinc-500 font-medium">Urgency</span>
+                  <span className={`font-body text-[13px] font-medium ${getUrgencyColor(ticket.urgency)}`}>
                     {ticket.urgency}/10
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-label text-[10px] text-zinc-500">CONFIDENCE</span>
-                  <span className="font-label text-[10px] font-bold text-zinc-700">
+                  <span className="font-body text-xs text-zinc-500 font-medium">Confidence</span>
+                  <span className="font-body text-[13px] font-medium text-zinc-900">
                     {Math.round(ticket.confidence * 100)}%
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-label text-[10px] text-zinc-500">RISK LEVEL</span>
+                  <span className="font-body text-xs text-zinc-500 font-medium">Risk Level</span>
                   <span className={`font-label text-[9px] px-1.5 py-0.5 rounded border ${getRiskBadge(ticket.riskLevel).bg} ${getRiskBadge(ticket.riskLevel).text} ${getRiskBadge(ticket.riskLevel).border}`}>
                     {ticket.riskLevel.toUpperCase()}
                   </span>
@@ -397,7 +414,7 @@ export function ResolutionConsoleMVP({
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <h3 className="font-label text-[10px] tracking-[0.15em] uppercase font-bold text-zinc-600">
-                  AI Triage Analysis
+                  Analysis
                 </h3>
                 {requiresApproval && (
                   <span className="font-label text-[9px] px-1.5 py-0.5 rounded border bg-amber-50 text-amber-800 border-amber-200 uppercase font-bold tracking-wider">
@@ -454,7 +471,7 @@ export function ResolutionConsoleMVP({
                   {message.subject}
                 </h4>
                 <span className="font-label text-[9px] text-zinc-400 mt-1 whitespace-nowrap">
-                  {new Date(ticket.receivedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  {new Date(ticket.receivedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
               <p className="font-body text-[13px] text-on-surface whitespace-pre-wrap leading-relaxed">
@@ -472,20 +489,20 @@ export function ResolutionConsoleMVP({
                 <span className="material-symbols-outlined !text-[16px] text-zinc-400" data-icon="edit_document">edit_document</span>
                 Draft Response
               </h3>
-              
+
               {/* Draft Provenance State Chip */}
               <div className={`px-2 py-0.5 rounded border font-label text-[9px] font-bold uppercase tracking-wider ${provenance.bg} transition-colors duration-300`}>
                 {provenance.text}
               </div>
             </div>
-            
+
             <div className="flex items-center gap-1">
-              <button 
+              <button
                 onClick={() => navigator.clipboard.writeText(editedResponse || triage.draftResponse || '')}
                 className="p-1.5 text-zinc-400 hover:text-primary hover:bg-zinc-200 rounded transition-all"
                 title="Copy current draft"
               >
-                 <span className="material-symbols-outlined !text-[16px]">content_copy</span>
+                <span className="material-symbols-outlined !text-[16px]">content_copy</span>
               </button>
               {!isEditing && (
                 <button
@@ -519,7 +536,7 @@ export function ResolutionConsoleMVP({
                 {editedResponse || triage.draftResponse}
               </div>
             )}
-            
+
             {/* Backend Data-Driven Proofing Results */}
             {proofState === 'proofed' && proofResult && (
               <>
@@ -529,20 +546,20 @@ export function ResolutionConsoleMVP({
                       <span className="material-symbols-outlined !text-[16px]">check_circle</span>
                       Proofing Complete
                     </h4>
-                    
-                    {proofResult.changesDetected && (
+
+                    {proofResult.changesDetected && !correctionsApplied && (
                       <p className="font-body text-xs italic text-zinc-500 mb-3 border-b border-tertiary/10 pb-2">
-                        Corrections automatically applied to your draft:
+                        Recommended corrections detected:
                       </p>
                     )}
-                    
+
                     {proofResult.summary && (
                       <div className="flex gap-2 mb-3">
                         {Object.entries(proofResult.summary).map(([key, val]) => {
                           if (key === 'risk') return null;
-                          const color = val === 'warning' ? 'bg-amber-100 text-amber-700 border-amber-200' : 
-                                        val === 'fixes_applied' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
-                                        'bg-green-50 text-green-700 border-green-200';
+                          const color = val === 'warning' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                            val === 'fixes_applied' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                              'bg-green-50 text-green-700 border-green-200';
                           return (
                             <span key={key} className={`px-2 py-0.5 rounded border font-label text-[9px] font-bold uppercase tracking-wider ${color}`}>
                               {key}: {val.replace('_', ' ')}
@@ -551,28 +568,50 @@ export function ResolutionConsoleMVP({
                         })}
                       </div>
                     )}
-                    
+
                     <ul className="space-y-2 font-body text-xs text-on-surface">
                       {proofResult.suggestions.map((suggestion, idx) => {
                         const renderKey = `${idx}-${suggestion.type}-${suggestion.message}`;
                         return (
-                        <li key={renderKey} className="flex items-start gap-2">
-                          <span className={`material-symbols-outlined !text-[14px] mt-0.5 ${
-                              suggestion.severity === 'high' ? 'text-red-500' : 
-                              suggestion.severity === 'medium' ? 'text-amber-500' : 'text-tertiary'
-                            }`}>
-                            {suggestion.severity === 'high' ? 'error' : suggestion.severity === 'medium' ? 'warning' : 'tips_and_updates'}
-                          </span>
-                          <div>
-                            <span className="font-semibold text-zinc-700 uppercase tracking-wider text-[10px] mr-1">
-                              [{suggestion.type}]
+                          <li key={renderKey} className="flex items-start gap-2">
+                            <span className={`material-symbols-outlined !text-[14px] mt-0.5 ${suggestion.severity === 'high' ? 'text-red-500' :
+                                suggestion.severity === 'medium' ? 'text-amber-500' : 'text-tertiary'
+                              }`}>
+                              {suggestion.severity === 'high' ? 'error' : suggestion.severity === 'medium' ? 'warning' : 'tips_and_updates'}
                             </span>
-                            <span>{suggestion.message}</span>
-                          </div>
-                        </li>
+                            <div>
+                              <span className="font-semibold text-zinc-700 uppercase tracking-wider text-[10px] mr-1">
+                                [{suggestion.type}]
+                              </span>
+                              <span>{suggestion.message}</span>
+                            </div>
+                          </li>
                         );
                       })}
                     </ul>
+
+                    {proofResult.changesDetected && !correctionsApplied && (
+                      <div className="mt-4 border-t border-tertiary/10 pt-3 flex justify-end">
+                        <button 
+                          onClick={() => {
+                            setEditedResponse(proofResult.correctedDraft);
+                            setLastProofedDraft(proofResult.correctedDraft);
+                            setCorrectionsApplied(true);
+                          }}
+                          className="px-3 py-1.5 bg-black text-white hover:bg-zinc-800 rounded font-label text-[10px] font-bold tracking-wide uppercase transition-all shadow-sm hover:-translate-y-[1px]"
+                        >
+                          Apply Corrections
+                        </button>
+                      </div>
+                    )}
+                    {correctionsApplied && proofResult.changesDetected && (
+                      <div className="mt-4 border-t border-tertiary/10 pt-3">
+                         <p className="font-label text-[10px] text-green-700 flex items-center gap-1 font-bold uppercase tracking-wider">
+                           <span className="material-symbols-outlined !text-[14px]">done_all</span>
+                           Corrections Applied
+                         </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="mt-4 p-3 bg-green-50/50 border border-green-200 rounded animate-in fade-in slide-in-from-bottom-2 duration-300 flex items-center gap-2 text-green-800">
@@ -584,10 +623,10 @@ export function ResolutionConsoleMVP({
             )}
 
             {proofState === 'send_failed' && (
-               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 flex items-center gap-2">
-                 <span className="material-symbols-outlined !text-[18px]">error</span>
-                 <p className="font-body text-sm font-medium">Failed to dispatch resolution payload. Please try again.</p>
-               </div>
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 flex items-center gap-2">
+                <span className="material-symbols-outlined !text-[18px]">error</span>
+                <p className="font-body text-sm font-medium">Failed to dispatch resolution payload. Please try again.</p>
+              </div>
             )}
           </div>
 
@@ -596,36 +635,35 @@ export function ResolutionConsoleMVP({
             <div className="flex items-center justify-between gap-3">
               <button
                 onClick={handleEditToggle}
-                className={`flex-1 px-4 py-2.5 transition-all rounded font-label text-[11px] font-bold tracking-wide uppercase ${
-                  isEditing
-                    ? 'bg-zinc-200 hover:bg-zinc-300 text-zinc-800 border-transparent shadow-inner'
-                    : 'bg-white border border-outline-variant hover:bg-zinc-100 text-zinc-700'
-                }`}
+                className={`flex-1 px-4 py-2.5 transition-all duration-300 rounded font-label text-[11px] font-bold tracking-wide uppercase relative z-10 ${isEditing
+                    ? 'bg-zinc-200 text-zinc-800 border-transparent shadow-inner'
+                    : 'bg-white border border-outline-variant text-zinc-700 hover:-translate-y-[1px] hover:shadow-sm hover:bg-zinc-50'
+                  }`}
               >
                 {isEditing ? 'Done Editing' : 'Edit Response'}
               </button>
               <button
                 onClick={handleActionClick}
-                disabled={proofState === 'proofing' || proofState === 'sending' || (editedResponse.trim().length === 0) || (proofState === 'proofed' && requiresApproval)}
-                className={`flex-1 px-4 py-2.5 transition-all rounded font-label text-[11px] font-bold tracking-wide uppercase text-white flex items-center justify-center gap-2 
-                  ${(proofState === 'proofed' && requiresApproval) ? 'bg-zinc-300 text-zinc-500 cursor-not-allowed' : proofState === 'proofed' ? 'bg-[#0078D4] hover:bg-[#006CBE]' : 'bg-primary hover:bg-primary/90'}
-                  ${(proofState === 'proofing' || proofState === 'sending') ? 'opacity-90 cursor-wait' : ''} 
-                  ${(editedResponse.trim().length === 0) ? 'opacity-50 cursor-not-allowed text-white/50 bg-zinc-400' : ''}
+                disabled={proofState === 'proofing' || proofState === 'sending' || (editedResponse.trim().length === 0) || (proofState === 'proofed' && requiresApproval) || (proofState === 'proofed' && !correctionsApplied)}
+                className={`flex-1 px-4 py-2.5 transition-all duration-300 rounded font-label text-[11px] font-bold tracking-wide uppercase text-white flex items-center justify-center gap-2 relative z-10 overflow-hidden
+                  ${(proofState === 'proofed' && requiresApproval) ? 'bg-zinc-300 text-zinc-500 cursor-not-allowed hover:-translate-y-0 hover:shadow-none' : proofState === 'proofed' && !correctionsApplied ? 'opacity-50 cursor-not-allowed text-zinc-400 bg-zinc-200 hover:-translate-y-0 hover:shadow-none' : proofState === 'proofed' ? 'bg-black hover:bg-zinc-900 hover:-translate-y-[1px] hover:shadow-md' : 'bg-zinc-800 hover:bg-zinc-900 hover:-translate-y-[1px] hover:shadow-md'}
+                  ${(proofState === 'proofing' || proofState === 'sending') ? 'opacity-90 cursor-wait hover:-translate-y-0 hover:shadow-none' : ''} 
+                  ${(editedResponse.trim().length === 0) ? 'opacity-50 cursor-not-allowed text-zinc-400 bg-zinc-200 hover:-translate-y-0 hover:shadow-none' : ''}
                 `}
               >
                 {proofState === 'sending' ? (
                   <>
-                     <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> SENDING...
+                    <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> SENDING...
                   </>
                 ) : proofState === 'proofing' ? (
-                   <>
-                     <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> PROOFING...
-                   </>
+                  <>
+                    <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> PROOFING...
+                  </>
                 ) : proofState === 'proofed' ? (
-                   <>
-                     <span className="material-symbols-outlined !text-[16px]">send</span>
-                     SEND RESPONSE
-                   </>
+                  <>
+                    <span className="material-symbols-outlined !text-[16px]">send</span>
+                    SEND RESPONSE
+                  </>
                 ) : (
                   <>
                     <span className="material-symbols-outlined !text-[16px]">spellcheck</span>
@@ -634,20 +672,20 @@ export function ResolutionConsoleMVP({
                 )}
               </button>
             </div>
-            
+
             {/* Contextual instruction */}
             <div className="text-center mt-2 h-4">
               <p className="font-label text-[9px] text-zinc-400 uppercase tracking-widest">
                 {requiresApproval && proofState === 'proofed' ? "This ticket requires management approval before sending." :
-                 proofState === 'sending' ? "Logging audit trail to backend..." : 
-                 proofState === 'invalidated' ? "Changes detected. Reproof thoroughly before sending." :
-                 proofState === 'proofed' ? "Ready for dispatch" : 
-                 "Must be proofed securely before sending"}
+                  proofState === 'sending' ? "Logging audit trail to backend..." :
+                    proofState === 'invalidated' ? "Changes detected. Reproof thoroughly before sending." :
+                      proofState === 'proofed' ? "Ready for dispatch" :
+                        "Must be proofed securely before sending"}
               </p>
             </div>
           </footer>
         </div>
-        
+
       </div>
     </div>
   );

@@ -61,7 +61,7 @@ function App() {
 
               {/* One-line instruction */}
               <p className="font-sans text-lg text-on-surface-variant max-w-2xl leading-relaxed">
-                Review AI-classified customer emails, approve draft responses, and manage queue priority — all in real-time.
+                Carefully review each enquiry, refine considered responses, and manage what needs attention — all in real time.
               </p>
             </div>
 
@@ -99,7 +99,7 @@ function App() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-sans text-xl text-primary font-medium mb-1">
-                      {activeHubData?.metrics.totalOpen || 0} emails in queue
+                      {activeHubData?.metrics.totalOpen || 0} enquires waiting
                     </p>
                     <p className="font-sans text-sm text-on-surface-variant">
                       {activeHubData?.metrics.urgentCount || 0} require urgent attention • Updated just now
@@ -115,20 +115,20 @@ function App() {
                 {/* Quick action guide */}
                 <div className="pt-6 border-t border-surface-container-high">
                   <p className="font-sans text-xs text-on-surface-variant uppercase tracking-wider mb-3">
-                    Quick Start
+                    Getting started
                   </p>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="bg-white p-4 rounded-xl">
                       <p className="font-sans text-xs text-primary font-medium mb-1">Step 1</p>
-                      <p className="font-sans text-sm text-on-surface">Click notification icon to open queue</p>
+                      <p className="font-sans text-sm text-on-surface">Open your queue to view new enquiries</p>
                     </div>
                     <div className="bg-white p-4 rounded-xl">
                       <p className="font-sans text-xs text-primary font-medium mb-1">Step 2</p>
-                      <p className="font-sans text-sm text-on-surface">Review classification & draft response</p>
+                      <p className="font-sans text-sm text-on-surface">Review the email and prepared response</p>
                     </div>
                     <div className="bg-white p-4 rounded-xl">
                       <p className="font-sans text-xs text-primary font-medium mb-1">Step 3</p>
-                      <p className="font-sans text-sm text-on-surface">Approve or edit before sending</p>
+                      <p className="font-sans text-sm text-on-surface">Approve or adjust before sending</p>
                     </div>
                   </div>
                 </div>

@@ -1,0 +1,119 @@
+[
+  {
+    "id": "damaged_missing_faulty_policy_20260331_165433",
+    "title": "Damaged/Faulty Item Policy",
+    "type": "policy",
+    "category": "damaged_missing_faulty",
+    "content": "Sagitine Damaged Item Policy All damaged or faulty items will be replaced free of charge. Process: 1. Customer provides photo evidence 2. We assess the damage 3. Replacement shipped within 2 business days 4. No return shipping required Terminology: ALWAYS use \"Box\", NEVER use \"drawer\" or \"unit\". Tone: Composed, confident, solution-focused. Thank the customer for reporting the issue, do not apologize.",
+    "tags": [
+      "damaged",
+      "faulty",
+      "replacement",
+      "policy"
+    ],
+    "source": "backfill_pipeline_refined",
+    "is_active": true,
+    "created_at": "2026-03-31T16:54:33.308527",
+    "updated_at": "2026-03-31T16:54:33.308544"
+  },
+  {
+    "id": "shipping_delivery_order_issue_policy_20260331_165433",
+    "title": "Shipping Expectations Policy",
+    "type": "policy",
+    "category": "shipping_delivery_order_issue",
+    "content": "Sagitine Shipping Policy Standard shipping: 5-7 business days Express shipping: 2-3 business days Pre-orders: Ships as estimated on product page International shipping: Available to most countries Tracking: Provided on dispatch All Boxes shipped in protective packaging to prevent damage.",
+    "tags": [
+      "shipping",
+      "delivery",
+      "timelines",
+      "policy"
+    ],
+    "source": "backfill_pipeline_refined",
+    "is_active": true,
+    "created_at": "2026-03-31T16:54:33.308702",
+    "updated_at": "2026-03-31T16:54:33.308704"
+  },
+  {
+    "id": "return_refund_exchange_policy_20260331_165433",
+    "title": "Returns & Refunds Policy",
+    "type": "policy",
+    "category": "return_refund_exchange",
+    "content": "Sagitine Returns Policy 30-day return window for unused items Item must be in original packaging Refunds processed within 5 business days Exchanges available for all products Contact us via reply email to initiate return We provide return shipping label",
+    "tags": [
+      "returns",
+      "refunds",
+      "exchanges",
+      "policy"
+    ],
+    "source": "backfill_pipeline_refined",
+    "is_active": true,
+    "created_at": "2026-03-31T16:54:33.308803",
+    "updated_at": "2026-03-31T16:54:33.308804"
+  },
+  {
+    "id": "stock_availability_policy_20260331_165433",
+    "title": "Pre-Order Policy",
+    "type": "policy",
+    "category": "stock_availability",
+    "content": "Sagitine Pre-Order Policy Pre-orders ship in the estimated timeframe Updates provided via email for any delays Orders can be cancelled before shipping Payment processed at shipping, not order time All pre-orders receive priority shipping once available",
+    "tags": [
+      "pre-order",
+      "stock",
+      "policy"
+    ],
+    "source": "backfill_pipeline_refined",
+    "is_active": true,
+    "created_at": "2026-03-31T16:54:33.308897",
+    "updated_at": "2026-03-31T16:54:33.308898"
+  },
+  {
+    "id": "product_usage_guidance_fact_20260331_165433",
+    "title": "Box Terminology",
+    "type": "fact",
+    "category": "product_usage_guidance",
+    "content": "Sagitine Product Terminology ALWAYS USE: \"Box\" or \"Stand\" NEVER USE: \"drawer\", \"unit\" Correct example: \"Your Box includes 3 compartments\" Incorrect example: \"Your drawer includes 3 compartments\" This terminology applies to all Sagitine storage products.",
+    "tags": [
+      "terminology",
+      "product",
+      "fact"
+    ],
+    "source": "backfill_pipeline_refined",
+    "is_active": true,
+    "created_at": "2026-03-31T16:54:33.309192",
+    "updated_at": "2026-03-31T16:54:33.309193"
+  },
+  {
+    "id": "product_usage_guidance_fact_20260331_165433",
+    "title": "Box Care Instructions",
+    "type": "fact",
+    "category": "product_usage_guidance",
+    "content": "Box Care Guidelines Our Boxes are finished with premium materials Wipe clean with dry, soft cloth Avoid harsh chemicals or abrasives Not suitable for dishwasher cleaning For timber products, use food-safe timber oil quarterly Maintain in dry environment away from direct heat sources",
+    "tags": [
+      "care",
+      "maintenance",
+      "product",
+      "fact"
+    ],
+    "source": "backfill_pipeline_refined",
+    "is_active": true,
+    "created_at": "2026-03-31T16:54:33.309401",
+    "updated_at": "2026-03-31T16:54:33.309402"
+  },
+  {
+    "id": "product_usage_guidance_fact_20260331_165433",
+    "title": "Assembly Guidelines",
+    "type": "fact",
+    "category": "product_usage_guidance",
+    "content": "Box Assembly Instructions All stands require minimal assembly Tools needed: Allen key (included) Assembly time: 5-10 minutes Instructions provided in packaging Can be assembled by one person Sturdy construction once assembled",
+    "tags": [
+      "assembly",
+      "setup",
+      "installation",
+      "fact"
+    ],
+    "source": "backfill_pipeline_refined",
+    "is_active": true,
+    "created_at": "2026-03-31T16:54:33.309519",
+    "updated_at": "2026-03-31T16:54:33.309521"
+  }
+]

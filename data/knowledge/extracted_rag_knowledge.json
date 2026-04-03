@@ -1,0 +1,244 @@
+{
+  "gold_responses": [
+    {
+      "category": "damaged_missing_faulty",
+      "scenario_summary": "Missing stand components on delivery",
+      "full_text": "Hi [Customer Name],\n\nThank you so much for your message.\n\nThat’s certainly not how your order should have arrived. If you’re able to send through a couple of photos of what you received, I’ll take a look straight away and organise the correct replacement parts for you.\n\nWe’ll get this sorted as quickly as possible.\n\nWarm regards,\nHeidi x",
+      "why_high_quality": [
+        "Empathetic and validating ('not how your order should have arrived')",
+        "Clear next steps (requesting photos before taking action)",
+        "Reassuring and composed tone ('get this sorted as quickly as possible')",
+        "Warm, personal sign-off signature ('Heidi x') consistent with brand"
+      ]
+    },
+    {
+      "category": "product_usage_guidance",
+      "scenario_summary": "Customer considers gluing boxes / explains box vs drawer design intent",
+      "full_text": "Hi [Customer Name],\n\nThank you so much for your message.\n\nI wouldn’t recommend gluing or adhering the Boxes in place. Any form of adhesion can damage them quite significantly because of their paper-based, hand-wrapped construction.\n\nThe Boxes are designed as storage boxes rather than drawers, so they are intended to be removed from the Stand for access and organisation.\n\nI hope that helps, and I’m always happy to answer any other questions.\n\nWarm regards,\nHeidi x",
+      "why_high_quality": [
+        "Directly answers the question without sounding dismissive",
+        "Educates the customer on the product's design intent (storage boxes vs. drawers)",
+        "Highlights the premium material construction to justify the technical advice (paper-based, hand-wrapped)",
+        "Maintains a helpful, conversational tone"
+      ]
+    },
+    {
+      "category": "return_refund_exchange",
+      "scenario_summary": "No return required for damaged paper-based boxes",
+      "full_text": "Hi [Customer Name],\n\nThat’s no trouble at all.\n\nThere is no need to return the damaged Boxes. If you’re able to find another use for them, that would be lovely, and if not, please feel free to recycle them.\n\nI’ll arrange the refund to the same payment method used for your order once confirmed.\n\nWarm regards,\nHeidi x",
+      "why_high_quality": [
+        "Reduces friction for the customer by not demanding a return of a low-salvage item",
+        "Provides environmentally conscious suggestions (repurpose or recycle)",
+        "Clearly states the resolution and payment refund process step"
+      ]
+    }
+  ],
+  "templates": [
+    {
+      "title": "Missing Hardware or Components",
+      "category": "damaged_missing_faulty",
+      "action_type": "request_information",
+      "body_template": "Hi [Customer Name],\n\nThank you so much for your message.\n\nThat’s certainly not how your order should have arrived. If you’re able to send through a couple of photos of what you received, I’ll take a look straight away and organise the correct replacement parts for you.\n\nWe’ll get this sorted as quickly as possible.\n\nWarm regards,\nHeidi x",
+      "tone": "warm_professional",
+      "mustInclude": [
+        "Validation of the issue (acknowledging the poor experience)",
+        "Request for photos to properly identify the missing parts",
+        "Reassurance of a quick resolution"
+      ],
+      "mustAvoid": [
+        "Over-apologizing (keep it composed and elevated)",
+        "Making the customer feel responsible",
+        "Promising a specific dispatch timeline before seeing the photos"
+      ],
+      "scenario_tags": [
+        "hardware_missing",
+        "first_contact",
+        "urgent"
+      ],
+      "applicability": {
+        "urgency_range": "High (8-10)",
+        "risk_levels": "Medium (product cannot be assembled)",
+        "context_signals": ["new_delivery", "assembly_phase"]
+      },
+      "retrieval_metadata": {
+        "summary": "Requests photos to quickly replace missing hardware or components from a new delivery.",
+        "keywords": ["missing", "parts", "components", "hardware", "photos", "replacement", "assembly"],
+        "confidence_signals": "Use when customer reports they cannot finish assembly because pieces are missing from the delivery."
+      }
+    },
+    {
+      "title": "Clarifying Box vs Drawer Design Intent",
+      "category": "product_usage_guidance",
+      "action_type": "educate_customer",
+      "body_template": "Hi [Customer Name],\n\nThank you so much for your message.\n\nThe first thing to note is that the Sagitine Boxes are designed as storage boxes, not drawers. They sit within the frame rather than on runners, which allows you to remove, reorganise, and protect your pieces more effectively over time.\n\nBecause of this, they are intentionally a more considered interaction. Many customers find it becomes very natural quite quickly, particularly when using two hands to open the Boxes.\n\nI hope that context is helpful, and of course please reach out if you have any other questions.\n\nWarm regards,\nHeidi x",
+      "tone": "warm_professional",
+      "mustInclude": [
+        "Explanation of 'storage box' vs 'drawer' concept",
+        "Mention of removing/reorganizing benefits",
+        "Tip to use two hands for the interaction"
+      ],
+      "mustAvoid": [
+        "Saying the product is 'supposed to be hard to open'",
+        "Apologizing for the design intent",
+        "Suggesting home modifications (like applying wax or adding runners)"
+      ],
+      "scenario_tags": [
+        "product_friction",
+        "educational",
+        "post_purchase"
+      ],
+      "applicability": {
+        "urgency_range": "Low (2-4)",
+        "risk_levels": "Low (manageable friction)",
+        "context_signals": ["new_customer", "usage_complaint"]
+      },
+      "retrieval_metadata": {
+        "summary": "Explains that Sagitine Boxes are meant to be removed completely and are not traditional sliding drawers.",
+        "keywords": ["hard to open", "drawers", "runners", "two hands", "storage boxes", "design intention", "friction"],
+        "confidence_signals": "Use when a customer complains about boxes being difficult to slide in and out or asks for advice on operation."
+      }
+    },
+    {
+      "title": "Refund Over Replacement Confirmation",
+      "category": "return_refund_exchange",
+      "action_type": "process_refund",
+      "body_template": "Hi [Customer Name],\n\nThank you for your message.\n\nThat’s absolutely fine. I’ll arrange your refund back to the same payment method used for your order. It typically takes around 3 business days to appear, although some banks can take up to 10.\n\nPlease just confirm that you’re happy for me to process it that way.\n\nWarm regards,\nHeidi x",
+      "tone": "warm_professional",
+      "mustInclude": [
+        "Acceptance of the refund preference",
+        "Timeline expectation (3 to 10 business days)",
+        "Confirmation request before processing the actual payment gateway"
+      ],
+      "mustAvoid": [
+        "Pushing back to convince them to take a replacement instead",
+        "Promising immediate funds availability"
+      ],
+      "scenario_tags": [
+        "refund_request",
+        "resolution_phase",
+        "customer_preference"
+      ],
+      "applicability": {
+        "urgency_range": "Medium (5-7)",
+        "risk_levels": "Low (customer is agreed to terms)",
+        "context_signals": ["customer_declined_replacement"]
+      },
+      "retrieval_metadata": {
+        "summary": "Confirms a customer's request for a refund instead of a replacement, outlining standard banking timelines.",
+        "keywords": ["refund", "money back", "3 business days", "bank timeline", "payment method"],
+        "confidence_signals": "Use when customer explicitly asks for a refund after a fault/issue is identified, rather than requesting new parts."
+      }
+    }
+  ],
+  "policy_rules": [
+    {
+      "rule_name": "No Sydney Click-and-Collect",
+      "description": "The Sydney warehouse is not equipped for public pickups. All orders must be shipped.",
+      "when_to_apply": "When a customer asks to pick up an order locally in Sydney to save time or shipping costs.",
+      "constraints": "Strict rule. No exceptions mentioned.",
+      "examples": ["We don’t currently offer a click-and-collect option, as our Sydney warehouse isn’t set up for customer pickups."]
+    },
+    {
+      "rule_name": "No Return for Damaged Paper Boxes",
+      "description": "If Sagitine paper-based boxes arrive substantially damaged, do not require the customer to ship them back.",
+      "when_to_apply": "When replacing or refunding damaged insert boxes.",
+      "constraints": "Applies to hand-wrapped paper boxes, not necessarily stands/hardware frames.",
+      "examples": ["There is no need to return the damaged Boxes. If you’re able to find another use for them, that would be lovely, and if not, please feel free to recycle them."]
+    },
+    {
+      "rule_name": "Refund Timelines",
+      "description": "Refunds take approximately 3 business days, but explicitly warn that some banks take up to 10.",
+      "when_to_apply": "Whenever processing a refund.",
+      "constraints": "Always mention the extended bank timeline to manage finality and expectations.",
+      "examples": ["It typically takes around 3 business days to appear, although some banks can take up to 10."]
+    },
+    {
+      "rule_name": "Component Separation",
+      "description": "Sagitine products are sold as complete systems. Components are not generally sold separately.",
+      "when_to_apply": "When a customer asks to purchase a single box for a stand, or a stand without boxes.",
+      "constraints": "Occasional exceptions exist for 'Stand-only' purchases if customer value makes sense, but the default brand stance is 'complete systems'.",
+      "examples": ["At the moment, we don’t have plans to offer that piece separately. Our pieces are designed as complete systems."]
+    },
+    {
+      "rule_name": "Large Item Returns Condition",
+      "description": "Return collections for stands require knowing if the unit is disassembled and if it is in original packaging.",
+      "when_to_apply": "When organizing a courier pickup for a returned stand.",
+      "constraints": "Must verify state before booking the pickup courier.",
+      "examples": ["I’ll just need to confirm whether the Stand is disassembled and whether you still have the original packaging, as that will determine the most suitable pickup method."]
+    }
+  ],
+  "product_knowledge": [
+    {
+      "topic": "Storage Boxes vs. Drawers",
+      "snippet": "Sagitine Boxes are designed as modular storage boxes that sit within a frame, rather than sliding drawers on runners. They are intended to be completely removed using two hands for organization and arranging.",
+      "correct_wording_patterns": ["storage boxes", "sit within the frame", "two hands", "considered interaction", "removed completely"],
+      "prohibited_wording": ["drawers", "runners", "sliding mechanisms", "stuck"]
+    },
+    {
+      "topic": "Adhesion and Modifications",
+      "snippet": "The boxes are built from a premium paper-based, hand-wrapped construction. They should never be glued, adhered, or modified, as this causes significant structural and visual damage.",
+      "correct_wording_patterns": ["paper-based", "hand-wrapped construction", "damage quite significantly"],
+      "prohibited_wording": ["glue them", "stick them down", "tape them"]
+    },
+    {
+      "topic": "Product Assembly",
+      "snippet": "Assembly of a Sagitine Stand is minimal and requires only an Allen key and a screwdriver. Instructions are provided by email before delivery and physically in the box.",
+      "correct_wording_patterns": ["simple setup", "Allen key and a screwdriver", "instruction guides"],
+      "prohibited_wording": ["complex assembly", "hire a handyman", "power tools"]
+    },
+    {
+      "topic": "Use of Inserts",
+      "snippet": "Inserts are designed exclusively to sit within a relevant Sagitine Box format to organize specific wardrobe and lifestyle items. They are not intended or designed to be utilized as standalone standalone pieces.",
+      "correct_wording_patterns": ["sit within the relevant Sagitine Box", "organise specific items"],
+      "prohibited_wording": ["standalone", "use them anywhere"]
+    }
+  ],
+  "scenario_tags": [
+    {
+      "tag": "damaged_transit",
+      "description": "Item was damaged during the shipping/courier process."
+    },
+    {
+      "tag": "hardware_missing",
+      "description": "Order is missing assembly hardware or key structural pieces."
+    },
+    {
+      "tag": "product_education",
+      "description": "Customer misunderstands how the product is originally intended to function."
+    },
+    {
+      "tag": "local_sydney_assembly",
+      "description": "Customer is based in Sydney and qualifies for/requests local assembled vehicle delivery options."
+    },
+    {
+      "tag": "refund_over_replace",
+      "description": "Customer prefers a money back refund rather than waiting for a replacement part."
+    },
+    {
+      "tag": "partnership_decline",
+      "description": "Polite rejection of an influencer, press, or wholesale inquiry."
+    }
+  ],
+  "gaps": [
+    {
+      "area": "International Shipping & Customs",
+      "description": "There is no documented clear policy for handling duties, taxes, or international shipping delays. This is critical for any future cross-border expansion."
+    },
+    {
+      "area": "Lost in Transit / Stolen Packages",
+      "description": "Missing guidance for when tracking shows 'Delivered' but the customer claims they did not receive it. Needs a specific tone/policy check."
+    },
+    {
+      "area": "Warranty Term",
+      "description": "The exact duration of the warranty (e.g., 1 year, 2 years) is not explicitly called out in the templates, making it vague when deciding if a free replacement is warranted outside standard return windows."
+    },
+    {
+      "area": "Tone for Angry/Escalated Customers",
+      "description": "All current gold templates assume the customer is reasonable. There is a lack of templates for de-escalating highly frustrated or legally threatening customers while still maintaining the elevated 'Sagitine' brand tone."
+    },
+    {
+      "area": "Discount Stacking / Coupon Error Resolutions",
+      "description": "Missing templates for handling situations where a discount code failed, a customer forgot to apply it (e.g., 'Forgot to ask for free shipping' observed in raw data), or system error refunds."
+    }
+  ]
+}

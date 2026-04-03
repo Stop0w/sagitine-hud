@@ -1,0 +1,1703 @@
+{
+    "name": "Sagitine Service - Inbound Triage 💁",
+    "flow": [
+        {
+            "id": 1,
+            "module": "microsoft-email:watchMessages",
+            "version": 2,
+            "parameters": {
+                "limit": 5,
+                "fields": [],
+                "folder": "/AQMkADIzMDVkZWJkLTlhYjUtNDViNC1hZmIxLTY1NzcAMzVkOTJmYzkALgAAA72f9SYny_NBqIJWNn2-mfUBANya_J0uO2FKl5QHpd8WU6cAAAIBDAAAAA==",
+                "search": "",
+                "select": "unread",
+                "__IMTCONN__": 8146287
+            },
+            "mapper": {},
+            "metadata": {
+                "designer": {
+                    "x": 0,
+                    "y": 300,
+                    "name": "Watch the info inbox"
+                },
+                "restore": {
+                    "parameters": {
+                        "folder": {
+                            "path": [
+                                "Inbox"
+                            ]
+                        },
+                        "select": {
+                            "label": "Only Unread"
+                        },
+                        "__IMTCONN__": {
+                            "data": {
+                                "scoped": "true",
+                                "connection": "azure"
+                            },
+                            "label": "Info@sagitine.com (info <info@sagitine.com>)"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "__IMTCONN__",
+                        "type": "account:azure",
+                        "label": "Connection",
+                        "required": true
+                    },
+                    {
+                        "name": "select",
+                        "type": "select",
+                        "label": "Watch Emails",
+                        "required": true,
+                        "validate": {
+                            "enum": [
+                                "unread",
+                                "read",
+                                "flagged",
+                                "all"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "folder",
+                        "type": "folder",
+                        "label": "Mail Folder"
+                    },
+                    {
+                        "name": "search",
+                        "type": "text",
+                        "label": "Search"
+                    },
+                    {
+                        "name": "fields",
+                        "type": "select",
+                        "label": "Fields",
+                        "multiple": true,
+                        "validate": {
+                            "enum": [
+                                "bccRecipients",
+                                "body",
+                                "bodyPreview",
+                                "categories",
+                                "ccRecipients",
+                                "changeKey",
+                                "conversationId",
+                                "conversationIndex",
+                                "flag",
+                                "from",
+                                "hasAttachments",
+                                "inferenceClassification",
+                                "importance",
+                                "internetMessageId",
+                                "isDraft",
+                                "isRead",
+                                "isReadReceiptRequested",
+                                "lastModifiedDateTime",
+                                "parentFolderId",
+                                "receivedDateTime",
+                                "replyTo",
+                                "sender",
+                                "sentDateTime",
+                                "subject",
+                                "toRecipients",
+                                "webLink",
+                                "internetMessageHeaders",
+                                "isDeliveryReceiptRequested",
+                                "uniqueBody",
+                                "endDateTime",
+                                "isAllDay",
+                                "isDelegated",
+                                "isOutOfDate",
+                                "location",
+                                "meetingMessageType",
+                                "meetingRequestType",
+                                "previousEndDateTime",
+                                "previousLocation",
+                                "previousStartDateTime",
+                                "responseRequested",
+                                "startDateTime",
+                                "type"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "type": "uinteger",
+                        "label": "Limit",
+                        "required": true
+                    }
+                ],
+                "interface": [
+                    {
+                        "name": "@odata.etag",
+                        "type": "text",
+                        "label": "@Odata Etag"
+                    },
+                    {
+                        "name": "id",
+                        "type": "text",
+                        "label": "Email ID"
+                    },
+                    {
+                        "name": "createdDateTime",
+                        "type": "date",
+                        "label": "Created Date Time"
+                    },
+                    {
+                        "name": "lastModifiedDateTime",
+                        "type": "date",
+                        "label": "Last Modified Date Time"
+                    },
+                    {
+                        "name": "changeKey",
+                        "type": "text",
+                        "label": "Change Key"
+                    },
+                    {
+                        "name": "categories",
+                        "type": "array",
+                        "label": "Categories"
+                    },
+                    {
+                        "name": "receivedDateTime",
+                        "type": "date",
+                        "label": "Received Date Time"
+                    },
+                    {
+                        "name": "sentDateTime",
+                        "type": "date",
+                        "label": "Sent Date Time"
+                    },
+                    {
+                        "name": "hasAttachments",
+                        "type": "boolean",
+                        "label": "Has Attachments"
+                    },
+                    {
+                        "name": "internetMessageId",
+                        "type": "text",
+                        "label": "Internet Message ID"
+                    },
+                    {
+                        "name": "subject",
+                        "type": "text",
+                        "label": "Subject"
+                    },
+                    {
+                        "name": "bodyPreview",
+                        "type": "text",
+                        "label": "Body Preview"
+                    },
+                    {
+                        "name": "importance",
+                        "type": "text",
+                        "label": "Importance"
+                    },
+                    {
+                        "name": "parentFolderId",
+                        "type": "text",
+                        "label": "Parent Folder ID"
+                    },
+                    {
+                        "name": "conversationId",
+                        "type": "text",
+                        "label": "Conversation ID"
+                    },
+                    {
+                        "name": "conversationIndex",
+                        "type": "text",
+                        "label": "Conversation Index"
+                    },
+                    {
+                        "name": "isReadReceiptRequested",
+                        "type": "boolean",
+                        "label": "Is Read Receipt Requested"
+                    },
+                    {
+                        "name": "isRead",
+                        "type": "boolean",
+                        "label": "Is Read"
+                    },
+                    {
+                        "name": "isDraft",
+                        "type": "boolean",
+                        "label": "Is Draft"
+                    },
+                    {
+                        "name": "webLink",
+                        "type": "text",
+                        "label": "Web Link"
+                    },
+                    {
+                        "name": "inferenceClassification",
+                        "type": "text",
+                        "label": "Inference Classification"
+                    },
+                    {
+                        "name": "meetingMessageType",
+                        "type": "text",
+                        "label": "Meeting Message Type"
+                    },
+                    {
+                        "name": "type",
+                        "type": "text",
+                        "label": "Type"
+                    },
+                    {
+                        "name": "isOutOfDate",
+                        "type": "boolean",
+                        "label": "Is Out Of Date"
+                    },
+                    {
+                        "name": "isAllDay",
+                        "type": "boolean",
+                        "label": "Is All Day"
+                    },
+                    {
+                        "name": "isDelegated",
+                        "type": "boolean",
+                        "label": "Is Delegated"
+                    },
+                    {
+                        "name": "responseRequested",
+                        "type": "boolean",
+                        "label": "Response Requested"
+                    },
+                    {
+                        "name": "meetingRequestType",
+                        "type": "text",
+                        "label": "Meeting Request Type"
+                    },
+                    {
+                        "name": "body",
+                        "spec": [
+                            {
+                                "name": "contentType",
+                                "type": "text",
+                                "label": "Content Type"
+                            },
+                            {
+                                "name": "content",
+                                "type": "text",
+                                "label": "Content"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Body"
+                    },
+                    {
+                        "name": "sender",
+                        "spec": [
+                            {
+                                "name": "emailAddress",
+                                "spec": [
+                                    {
+                                        "name": "name",
+                                        "type": "text",
+                                        "label": "Name"
+                                    },
+                                    {
+                                        "name": "address",
+                                        "type": "text",
+                                        "label": "Address"
+                                    }
+                                ],
+                                "type": "collection",
+                                "label": "Email Address"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Sender"
+                    },
+                    {
+                        "name": "from",
+                        "spec": [
+                            {
+                                "name": "emailAddress",
+                                "spec": [
+                                    {
+                                        "name": "name",
+                                        "type": "text",
+                                        "label": "Name"
+                                    },
+                                    {
+                                        "name": "address",
+                                        "type": "text",
+                                        "label": "Address"
+                                    }
+                                ],
+                                "type": "collection",
+                                "label": "Email Address"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "From"
+                    },
+                    {
+                        "name": "toRecipients",
+                        "spec": {
+                            "spec": [
+                                {
+                                    "name": "emailAddress",
+                                    "spec": [
+                                        {
+                                            "name": "name",
+                                            "type": "text",
+                                            "label": "Name"
+                                        },
+                                        {
+                                            "name": "address",
+                                            "type": "text",
+                                            "label": "Address"
+                                        }
+                                    ],
+                                    "type": "collection",
+                                    "label": "Email Address"
+                                }
+                            ],
+                            "type": "collection"
+                        },
+                        "type": "array",
+                        "label": "To Recipients"
+                    },
+                    {
+                        "name": "ccRecipients",
+                        "spec": {
+                            "spec": [
+                                {
+                                    "name": "emailAddress",
+                                    "spec": [
+                                        {
+                                            "name": "name",
+                                            "type": "text",
+                                            "label": "Name"
+                                        },
+                                        {
+                                            "name": "address",
+                                            "type": "text",
+                                            "label": "Address"
+                                        }
+                                    ],
+                                    "type": "collection",
+                                    "label": "Email Address"
+                                }
+                            ],
+                            "type": "collection"
+                        },
+                        "type": "array",
+                        "label": "Cc Recipients"
+                    },
+                    {
+                        "name": "bccRecipients",
+                        "spec": {
+                            "spec": [
+                                {
+                                    "name": "emailAddress",
+                                    "spec": [
+                                        {
+                                            "name": "name",
+                                            "type": "text",
+                                            "label": "Name"
+                                        },
+                                        {
+                                            "name": "address",
+                                            "type": "text",
+                                            "label": "Address"
+                                        }
+                                    ],
+                                    "type": "collection",
+                                    "label": "Email Address"
+                                }
+                            ],
+                            "type": "collection"
+                        },
+                        "type": "array",
+                        "label": "Bcc Recipients"
+                    },
+                    {
+                        "name": "replyTo",
+                        "spec": {
+                            "spec": [
+                                {
+                                    "name": "emailAddress",
+                                    "spec": [
+                                        {
+                                            "name": "name",
+                                            "type": "text",
+                                            "label": "Name"
+                                        },
+                                        {
+                                            "name": "address",
+                                            "type": "text",
+                                            "label": "Address"
+                                        }
+                                    ],
+                                    "type": "collection",
+                                    "label": "Email Address"
+                                }
+                            ],
+                            "type": "collection"
+                        },
+                        "type": "array",
+                        "label": "Reply To"
+                    },
+                    {
+                        "name": "flag",
+                        "spec": [
+                            {
+                                "name": "flagStatus",
+                                "type": "text",
+                                "label": "Flag Status"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Flag"
+                    },
+                    {
+                        "name": "startDateTime",
+                        "spec": [
+                            {
+                                "name": "dateTime",
+                                "time": true,
+                                "type": "date",
+                                "label": "Date Time"
+                            },
+                            {
+                                "name": "timeZone",
+                                "type": "timezone",
+                                "label": "Time Zone"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Start Date Time"
+                    },
+                    {
+                        "name": "endDateTime",
+                        "spec": [
+                            {
+                                "name": "dateTime",
+                                "time": true,
+                                "type": "date",
+                                "label": "Date Time"
+                            },
+                            {
+                                "name": "timeZone",
+                                "type": "timezone",
+                                "label": "Time Zone"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "End Date Time"
+                    },
+                    {
+                        "name": "location",
+                        "spec": [
+                            {
+                                "name": "displayName",
+                                "type": "text",
+                                "label": "Display Name"
+                            },
+                            {
+                                "name": "locationType",
+                                "type": "text",
+                                "label": "Location Type"
+                            },
+                            {
+                                "name": "uniqueIdType",
+                                "type": "text",
+                                "label": "Unique ID Type"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Location"
+                    },
+                    {
+                        "name": "previousLocation",
+                        "spec": [
+                            {
+                                "name": "displayName",
+                                "type": "text",
+                                "label": "Display Name"
+                            },
+                            {
+                                "name": "locationType",
+                                "type": "text",
+                                "label": "Location Type"
+                            },
+                            {
+                                "name": "uniqueIdType",
+                                "type": "text",
+                                "label": "Unique ID Type"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Previous Location"
+                    },
+                    {
+                        "name": "previousStartDateTime",
+                        "spec": [
+                            {
+                                "name": "dateTime",
+                                "time": true,
+                                "type": "date",
+                                "label": "Date Time"
+                            },
+                            {
+                                "name": "timeZone",
+                                "type": "timezone",
+                                "label": "Time Zone"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Previous Start Date Time"
+                    },
+                    {
+                        "name": "previousEndDateTime",
+                        "spec": [
+                            {
+                                "name": "dateTime",
+                                "time": true,
+                                "type": "date",
+                                "label": "Date Time"
+                            },
+                            {
+                                "name": "timeZone",
+                                "type": "timezone",
+                                "label": "Time Zone"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Previous End Date Time"
+                    },
+                    {
+                        "name": "sensitivityLabel",
+                        "type": "text",
+                        "label": "Sensitivity Label"
+                    },
+                    {
+                        "name": "smimeEncrypted",
+                        "type": "boolean",
+                        "label": "S/MIME encrypted"
+                    },
+                    {
+                        "name": "smimeSigned",
+                        "type": "boolean",
+                        "label": "S/MIME signed"
+                    },
+                    {
+                        "name": "uniqueBody",
+                        "spec": [
+                            {
+                                "name": "contentType",
+                                "type": "text",
+                                "label": "Content Type"
+                            },
+                            {
+                                "name": "content",
+                                "type": "text",
+                                "label": "Content"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Unique Body"
+                    },
+                    {
+                        "name": "internetMessageHeaders",
+                        "spec": {
+                            "spec": [
+                                {
+                                    "name": "name",
+                                    "type": "text",
+                                    "label": "Name"
+                                },
+                                {
+                                    "name": "value",
+                                    "type": "text",
+                                    "label": "Value"
+                                }
+                            ],
+                            "type": "collection"
+                        },
+                        "type": "array",
+                        "label": "Internet Message Headers"
+                    }
+                ]
+            }
+        },
+        {
+            "id": 2,
+            "module": "http:MakeRequest",
+            "version": 4,
+            "parameters": {
+                "tlsType": "",
+                "proxyKeychain": "",
+                "authenticationType": "noAuth"
+            },
+            "mapper": {
+                "url": "https://sagitine-hud.vercel.app/api/classify",
+                "method": "post",
+                "headers": [
+                    {
+                        "name": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "contentType": "json",
+                "inputMethod": "dataStructure",
+                "shareCookies": false,
+                "parseResponse": true,
+                "allowRedirects": true,
+                "stopOnHttpError": true,
+                "bodyDataStructure": 324792,
+                "dataStructureBodyContent": {
+                    "subject": "{{1.subject}}",
+                    "body_html": "{{1.body.content}}",
+                    "from_name": "{{1.from.emailAddress.name}}",
+                    "timestamp": "{{1.receivedDateTime}}",
+                    "body_plain": "{{1.bodyPreview}}",
+                    "from_email": "{{1.from.emailAddress.address}}",
+                    "message_id": "{{1.id}}"
+                },
+                "requestCompressedContent": true
+            },
+            "metadata": {
+                "designer": {
+                    "x": 300,
+                    "y": 300,
+                    "name": "Classify Inquiry 🤔"
+                },
+                "restore": {
+                    "expect": {
+                        "method": {
+                            "mode": "chose",
+                            "label": "POST"
+                        },
+                        "headers": {
+                            "mode": "chose",
+                            "items": [
+                                null
+                            ]
+                        },
+                        "contentType": {
+                            "label": "application/jsonEnter data in the JSON format, as a string or using a data structure."
+                        },
+                        "inputMethod": {
+                            "label": "Data structureDefine the JSON body with a data structure to map or enter values for each key. JSON reserved characters are escaped automatically."
+                        },
+                        "shareCookies": {
+                            "mode": "chose"
+                        },
+                        "parseResponse": {
+                            "mode": "chose"
+                        },
+                        "allowRedirects": {
+                            "mode": "chose"
+                        },
+                        "paginationType": {
+                            "label": "Empty"
+                        },
+                        "queryParameters": {
+                            "mode": "chose"
+                        },
+                        "stopOnHttpError": {
+                            "mode": "chose"
+                        },
+                        "bodyDataStructure": {
+                            "label": "Info Service"
+                        },
+                        "requestCompressedContent": {
+                            "mode": "chose"
+                        }
+                    },
+                    "parameters": {
+                        "tlsType": {
+                            "label": "Empty"
+                        },
+                        "proxyKeychain": {
+                            "label": "Choose a key"
+                        },
+                        "authenticationType": {
+                            "label": "No authenticationUse when no credentials are required for the request."
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "authenticationType",
+                        "type": "select",
+                        "label": "Authentication type",
+                        "required": true,
+                        "validate": {
+                            "enum": [
+                                "noAuth",
+                                "apiKey",
+                                "basicAuth",
+                                "oAuth"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "tlsType",
+                        "type": "select",
+                        "label": "Transport layer security (TLS)",
+                        "validate": {
+                            "enum": [
+                                "mTls",
+                                "tls"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "proxyKeychain",
+                        "type": "keychain:proxy",
+                        "label": "Proxy"
+                    }
+                ],
+                "expect": [
+                    {
+                        "name": "url",
+                        "type": "url",
+                        "label": "URL",
+                        "required": true
+                    },
+                    {
+                        "name": "method",
+                        "type": "select",
+                        "label": "Method",
+                        "required": true,
+                        "validate": {
+                            "enum": [
+                                "get",
+                                "head",
+                                "post",
+                                "put",
+                                "patch",
+                                "delete",
+                                "options"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "headers",
+                        "spec": {
+                            "name": "value",
+                            "spec": [
+                                {
+                                    "name": "name",
+                                    "type": "text",
+                                    "label": "Name",
+                                    "required": true,
+                                    "validate": {
+                                        "pattern": "^[-!#$%&'*+.^_`|~0-9A-Za-z]+$"
+                                    }
+                                },
+                                {
+                                    "name": "value",
+                                    "type": "text",
+                                    "label": "Value"
+                                }
+                            ],
+                            "type": "collection",
+                            "label": "Header"
+                        },
+                        "type": "array",
+                        "label": "Headers"
+                    },
+                    {
+                        "name": "queryParameters",
+                        "spec": {
+                            "name": "value",
+                            "spec": [
+                                {
+                                    "name": "name",
+                                    "type": "text",
+                                    "label": "Name",
+                                    "required": true
+                                },
+                                {
+                                    "name": "value",
+                                    "type": "text",
+                                    "label": "Value"
+                                }
+                            ],
+                            "type": "collection",
+                            "label": "Parameter"
+                        },
+                        "type": "array",
+                        "label": "Query parameters"
+                    },
+                    {
+                        "name": "contentType",
+                        "type": "select",
+                        "label": "Body content type",
+                        "validate": {
+                            "enum": [
+                                "json",
+                                "multipart",
+                                "urlEncoded",
+                                "custom"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "parseResponse",
+                        "type": "boolean",
+                        "label": "Parse response",
+                        "required": true
+                    },
+                    {
+                        "name": "stopOnHttpError",
+                        "type": "boolean",
+                        "label": "Return error if HTTP request fails",
+                        "required": true
+                    },
+                    {
+                        "name": "timeout",
+                        "type": "uinteger",
+                        "label": "Timeout",
+                        "validate": {
+                            "max": 300,
+                            "min": 1
+                        }
+                    },
+                    {
+                        "name": "allowRedirects",
+                        "type": "boolean",
+                        "label": "Allow redirects",
+                        "required": true
+                    },
+                    {
+                        "name": "shareCookies",
+                        "type": "boolean",
+                        "label": "Share cookies with other HTTP modules",
+                        "required": true
+                    },
+                    {
+                        "name": "requestCompressedContent",
+                        "type": "boolean",
+                        "label": "Request compressed content",
+                        "required": true
+                    },
+                    {
+                        "name": "inputMethod",
+                        "type": "select",
+                        "label": "Body input method",
+                        "required": true,
+                        "validate": {
+                            "enum": [
+                                "dataStructure",
+                                "jsonString"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "bodyDataStructure",
+                        "type": "udt",
+                        "label": "Body structure",
+                        "required": true
+                    },
+                    {
+                        "name": "dataStructureBodyContent",
+                        "spec": [
+                            {
+                                "name": "from_email",
+                                "type": "text",
+                                "label": "From email"
+                            },
+                            {
+                                "name": "from_name",
+                                "type": "text",
+                                "label": "From name"
+                            },
+                            {
+                                "name": "subject",
+                                "type": "text",
+                                "label": "Subject"
+                            },
+                            {
+                                "name": "body_plain",
+                                "type": "text",
+                                "label": "Body plain"
+                            },
+                            {
+                                "name": "body_html",
+                                "type": "text",
+                                "label": "Body HTML"
+                            },
+                            {
+                                "name": "timestamp",
+                                "type": "text",
+                                "label": "Timestamp"
+                            },
+                            {
+                                "name": "message_id",
+                                "type": "text",
+                                "label": "Message ID"
+                            },
+                            {
+                                "name": "thread_id",
+                                "type": "text",
+                                "label": "Thread ID"
+                            },
+                            {
+                                "name": "in_reply_to",
+                                "type": "text",
+                                "label": "In reply to"
+                            },
+                            {
+                                "name": "references",
+                                "type": "text",
+                                "label": "References"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Body content"
+                    },
+                    {
+                        "name": "paginationType",
+                        "type": "select",
+                        "label": "Pagination type",
+                        "validate": {
+                            "enum": [
+                                "offsetBased",
+                                "pageBased",
+                                "urlBased",
+                                "tokenBased"
+                            ]
+                        }
+                    }
+                ],
+                "interface": [
+                    {
+                        "name": "data",
+                        "type": "any",
+                        "label": "Data"
+                    },
+                    {
+                        "name": "statusCode",
+                        "type": "number",
+                        "label": "Status Code"
+                    },
+                    {
+                        "name": "headers",
+                        "spec": [
+                            {
+                                "name": "content-length",
+                                "type": "text",
+                                "label": "Content-Length"
+                            },
+                            {
+                                "name": "content-encoding",
+                                "type": "text",
+                                "label": "Content-Encoding"
+                            },
+                            {
+                                "name": "content-type",
+                                "type": "text",
+                                "label": "Content-Type"
+                            },
+                            {
+                                "name": "server",
+                                "type": "text",
+                                "label": "Server"
+                            },
+                            {
+                                "name": "cache-control",
+                                "type": "text",
+                                "label": "Cache-Control"
+                            },
+                            {
+                                "name": "set-cookie",
+                                "spec": {
+                                    "type": "text"
+                                },
+                                "type": "array",
+                                "label": "Set-Cookie"
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Headers"
+                    }
+                ]
+            }
+        },
+        {
+            "id": 12,
+            "module": "json:ParseJSON",
+            "version": 1,
+            "parameters": {
+                "type": 325367
+            },
+            "mapper": {
+                "json": "{{2.data.data}}"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 600,
+                    "y": 300
+                },
+                "restore": {
+                    "parameters": {
+                        "type": {
+                            "label": "info@sagitine"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "type",
+                        "type": "udt",
+                        "label": "Data structure"
+                    }
+                ],
+                "expect": [
+                    {
+                        "name": "json",
+                        "type": "text",
+                        "label": "JSON string",
+                        "required": true
+                    }
+                ],
+                "interface": [
+                    {
+                        "help": "",
+                        "name": "success",
+                        "type": "boolean",
+                        "label": "Success",
+                        "required": false
+                    },
+                    {
+                        "help": "",
+                        "name": "data",
+                        "spec": [
+                            {
+                                "help": "",
+                                "name": "category_primary",
+                                "type": "text",
+                                "label": "Category primary",
+                                "default": null,
+                                "required": false,
+                                "multiline": false
+                            },
+                            {
+                                "help": "",
+                                "name": "safe_to_auto_draft",
+                                "type": "boolean",
+                                "label": "Safe to auto draft",
+                                "required": false
+                            },
+                            {
+                                "help": "",
+                                "name": "safe_to_auto_send",
+                                "type": "boolean",
+                                "label": "Safe to auto send",
+                                "required": false
+                            },
+                            {
+                                "help": "",
+                                "name": "confidence",
+                                "type": "number",
+                                "label": "Confidence",
+                                "default": null,
+                                "required": false
+                            },
+                            {
+                                "help": "",
+                                "name": "urgency",
+                                "type": "number",
+                                "label": "Urgency",
+                                "default": null,
+                                "required": false
+                            },
+                            {
+                                "help": "",
+                                "name": "risk_level",
+                                "type": "text",
+                                "label": "Risk level",
+                                "default": null,
+                                "required": false,
+                                "multiline": false
+                            }
+                        ],
+                        "type": "collection",
+                        "label": "Data",
+                        "required": false
+                    }
+                ]
+            }
+        },
+        {
+            "id": 3,
+            "module": "builtin:BasicRouter",
+            "version": 1,
+            "mapper": null,
+            "metadata": {
+                "designer": {
+                    "x": 900,
+                    "y": 300
+                }
+            },
+            "routes": [
+                {
+                    "flow": [
+                        {
+                            "id": 4,
+                            "module": "microsoft-email:moveAMessage",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": 8146287
+                            },
+                            "filter": {
+                                "name": "spam",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{2.data.success}}",
+                                            "b": "true",
+                                            "o": "text:equal"
+                                        },
+                                        {
+                                            "a": "{{12.data.category_primary}}",
+                                            "b": "spam_solicitation",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "folder": "Inbox/07_Ignored",
+                                "message": "{{1.id}}"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": 0,
+                                    "name": " Move to Spam Folder"
+                                },
+                                "restore": {
+                                    "expect": {
+                                        "folder": {
+                                            "mode": "edit"
+                                        },
+                                        "message": {
+                                            "mode": "edit"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "azure"
+                                            },
+                                            "label": "Info@sagitine.com (info <info@sagitine.com>)"
+                                        }
+                                    }
+                                },
+                                "parameters": [
+                                    {
+                                        "name": "__IMTCONN__",
+                                        "type": "account:azure",
+                                        "label": "Connection",
+                                        "required": true
+                                    }
+                                ],
+                                "expect": [
+                                    {
+                                        "mode": "edit",
+                                        "name": "message",
+                                        "type": "select",
+                                        "label": "Email ID",
+                                        "required": true
+                                    },
+                                    {
+                                        "name": "folder",
+                                        "type": "folder",
+                                        "label": "Mail Folder",
+                                        "required": true
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "flow": [
+                        {
+                            "id": 5,
+                            "module": "microsoft-email:createAMessage",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": 8146287
+                            },
+                            "filter": {
+                                "name": "auto_draft",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{2.data.success}}",
+                                            "b": "true",
+                                            "o": "text:equal"
+                                        },
+                                        {
+                                            "a": "{{12.data.category_primary}}",
+                                            "b": "damaged_missing_faulty",
+                                            "o": "text:equal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{12.data.category_primary}}",
+                                            "b": "shipping_delivery_order_issue",
+                                            "o": "text:equal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{12.data.category_primary}}",
+                                            "b": "product_usage_guidance",
+                                            "o": "text:equal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{12.data.category_primary}}",
+                                            "b": "pre_purchase_question",
+                                            "o": "text:equal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{12.data.category_primary}}",
+                                            "b": "return_refund_exchange",
+                                            "o": "text:equal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{12.data.category_primary}}",
+                                            "b": "stock_availability",
+                                            "o": "text:equal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{12.data.category_primary}}",
+                                            "b": "account_billing_payment",
+                                            "o": "text:equal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{12.data.category_primary}}",
+                                            "b": "order_modification_cancellation",
+                                            "o": "text:equal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{12.data.category_primary}}",
+                                            "b": "brand_feedback_general",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "subject": "{{2.data.data.reply_subject}}",
+                                "content": "{{2.data.data.reply_body}}\r\n\r\n<!--EMAIL_ID:{{1.id}}-->\r\n",
+                                "replyTo": [
+                                    {
+                                        "address": "{{1.sender.emailAddress.address}}",
+                                        "name": "{{1.sender.emailAddress.name}}"
+                                    }
+                                ],
+                                "contentType": "html",
+                                "singleValueExtendedProperties": {}
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": 300,
+                                    "name": "Create a draft reply 🖊️"
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "Info@sagitine.com (info <info@sagitine.com>)",
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "azure"
+                                            }
+                                        }
+                                    },
+                                    "expect": {
+                                        "toRecipients": {
+                                            "mode": "chose"
+                                        },
+                                        "attachments": {
+                                            "mode": "chose"
+                                        },
+                                        "replyTo": {
+                                            "mode": "chose",
+                                            "items": [
+                                                null
+                                            ]
+                                        },
+                                        "ccRecipients": {
+                                            "mode": "chose"
+                                        },
+                                        "bccRecipients": {
+                                            "mode": "chose"
+                                        },
+                                        "importance": {
+                                            "mode": "chose",
+                                            "label": "Empty"
+                                        },
+                                        "contentType": {
+                                            "mode": "chose",
+                                            "label": "HTML"
+                                        }
+                                    }
+                                },
+                                "parameters": [
+                                    {
+                                        "name": "__IMTCONN__",
+                                        "type": "account:azure",
+                                        "label": "Connection",
+                                        "required": true
+                                    }
+                                ],
+                                "expect": [
+                                    {
+                                        "name": "toRecipients",
+                                        "type": "array",
+                                        "label": "To Recipients",
+                                        "spec": [
+                                            {
+                                                "name": "address",
+                                                "type": "email",
+                                                "label": "Email Address",
+                                                "required": true
+                                            },
+                                            {
+                                                "name": "name",
+                                                "type": "text",
+                                                "label": "Name"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "name": "subject",
+                                        "type": "text",
+                                        "label": "Subject",
+                                        "required": true
+                                    },
+                                    {
+                                        "name": "content",
+                                        "type": "text",
+                                        "label": "Body Content",
+                                        "required": true
+                                    },
+                                    {
+                                        "name": "attachments",
+                                        "type": "array",
+                                        "label": "Attachments",
+                                        "spec": [
+                                            {
+                                                "name": "filename",
+                                                "type": "filename",
+                                                "label": "File Name",
+                                                "required": true,
+                                                "semantic": "file:name"
+                                            },
+                                            {
+                                                "name": "data",
+                                                "type": "buffer",
+                                                "label": "Data",
+                                                "required": true,
+                                                "semantic": "file:data"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "name": "replyTo",
+                                        "type": "array",
+                                        "label": "Reply To",
+                                        "spec": [
+                                            {
+                                                "name": "address",
+                                                "type": "email",
+                                                "label": "Email Address",
+                                                "required": true
+                                            },
+                                            {
+                                                "name": "name",
+                                                "type": "text",
+                                                "label": "Name"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "name": "ccRecipients",
+                                        "type": "array",
+                                        "label": "CC Recipients",
+                                        "spec": [
+                                            {
+                                                "name": "address",
+                                                "type": "email",
+                                                "label": "Email Address",
+                                                "required": true
+                                            },
+                                            {
+                                                "name": "name",
+                                                "type": "text",
+                                                "label": "Name"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "name": "bccRecipients",
+                                        "type": "array",
+                                        "label": "Bcc Recipients",
+                                        "spec": [
+                                            {
+                                                "name": "address",
+                                                "type": "email",
+                                                "label": "Email Address",
+                                                "required": true
+                                            },
+                                            {
+                                                "name": "name",
+                                                "type": "text",
+                                                "label": "Name"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "name": "importance",
+                                        "type": "select",
+                                        "label": "Importance",
+                                        "validate": {
+                                            "enum": [
+                                                "Low",
+                                                "Normal",
+                                                "High"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "contentType",
+                                        "type": "select",
+                                        "label": "Body Content Type",
+                                        "required": true,
+                                        "validate": {
+                                            "enum": [
+                                                "html",
+                                                "text"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "singleValueExtendedProperties",
+                                        "type": "collection",
+                                        "label": "Extended MAPI Properties",
+                                        "spec": [
+                                            {
+                                                "name": "sensitivityLabel",
+                                                "type": "text",
+                                                "label": "Sensitivity Label"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "advanced": true
+                            }
+                        },
+                        {
+                            "id": 8,
+                            "module": "microsoft-email:moveAMessage",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": 8146287
+                            },
+                            "mapper": {
+                                "folder": "Inbox/02_AI Drafted",
+                                "message": "{{5.id}}"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1500,
+                                    "y": 300,
+                                    "name": "Move to Review Folder 📂"
+                                },
+                                "restore": {
+                                    "expect": {
+                                        "folder": {
+                                            "mode": "edit"
+                                        },
+                                        "message": {
+                                            "mode": "edit"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "azure"
+                                            },
+                                            "label": "Info@sagitine.com (info <info@sagitine.com>)"
+                                        }
+                                    }
+                                },
+                                "parameters": [
+                                    {
+                                        "name": "__IMTCONN__",
+                                        "type": "account:azure",
+                                        "label": "Connection",
+                                        "required": true
+                                    }
+                                ],
+                                "expect": [
+                                    {
+                                        "mode": "edit",
+                                        "name": "message",
+                                        "type": "select",
+                                        "label": "Email ID",
+                                        "required": true
+                                    },
+                                    {
+                                        "name": "folder",
+                                        "type": "folder",
+                                        "label": "Mail Folder",
+                                        "required": true
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "flow": [
+                        {
+                            "id": 9,
+                            "module": "microsoft-email:moveAMessage",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": 8146287
+                            },
+                            "filter": {
+                                "name": "manual_review",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{2.data.success}}",
+                                            "b": "false",
+                                            "o": "text:equal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{12.data.category_primary}}",
+                                            "b": "partnership_wholesale_press",
+                                            "o": "text:equal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{12.data.category_primary}}",
+                                            "b": "praise_testimonial_ugc",
+                                            "o": "text:equal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{12.data.category_primary}}",
+                                            "b": "other_uncategorized",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "folder": "Inbox/06_Manual Handling",
+                                "message": "{{1.id}}"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": 600,
+                                    "name": "Move to Manual Review Folder ⚠️"
+                                },
+                                "restore": {
+                                    "expect": {
+                                        "folder": {
+                                            "mode": "edit"
+                                        },
+                                        "message": {
+                                            "mode": "edit"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "azure"
+                                            },
+                                            "label": "Info@sagitine.com (info <info@sagitine.com>)"
+                                        }
+                                    }
+                                },
+                                "parameters": [
+                                    {
+                                        "name": "__IMTCONN__",
+                                        "type": "account:azure",
+                                        "label": "Connection",
+                                        "required": true
+                                    }
+                                ],
+                                "expect": [
+                                    {
+                                        "mode": "edit",
+                                        "name": "message",
+                                        "type": "select",
+                                        "label": "Email ID",
+                                        "required": true
+                                    },
+                                    {
+                                        "name": "folder",
+                                        "type": "folder",
+                                        "label": "Mail Folder",
+                                        "required": true
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "metadata": {
+        "instant": false,
+        "version": 1,
+        "scenario": {
+            "roundtrips": 1,
+            "maxErrors": 3,
+            "autoCommit": true,
+            "autoCommitTriggerLast": true,
+            "sequential": false,
+            "slots": null,
+            "confidential": false,
+            "dataloss": false,
+            "dlq": false,
+            "freshVariables": false
+        },
+        "designer": {
+            "orphans": []
+        },
+        "zone": "us2.make.com",
+        "notes": []
+    }
+}

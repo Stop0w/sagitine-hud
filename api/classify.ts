@@ -250,60 +250,49 @@ function classifyEmail(payload: any): ClassificationResult {
   };
 }
 
-export default async function handler(req: Request) {
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  };
+export default async function handler(req, res) {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 200, headers: corsHeaders });
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({
+      success: false,
+      error: 'Method not allowed',
+      timestamp: new Date().toISOString(),
+    });
   }
 
   try {
-    const rawBody = await req.json();
+    const rawBody = req.body;
 
     // Basic validation
-    if (!rawBody.from_email || !rawBody.subject || !rawBody.body_plain || !rawBody.timestamp) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Missing required fields: from_email, subject, body_plain, timestamp',
-          timestamp: new Date().toISOString(),
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+    if (!rawBody || !rawBody.from_email || !rawBody.subject || !rawBody.body_plain || !rawBody.timestamp) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: from_email, subject, body_plain, timestamp',
+        timestamp: new Date().toISOString(),
+      });
     }
 
     const result = classifyEmail(rawBody);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        data: result,
-        timestamp: new Date().toISOString(),
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return res.status(200).json({
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+    });
 
   } catch (error: any) {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message || 'Unknown error',
-        timestamp: new Date().toISOString(),
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Unknown error',
+      timestamp: new Date().toISOString(),
+    });
   }
 }

@@ -1,0 +1,92 @@
+[
+  {
+    "name": "1. Shipping delay (core revenue-saving case)",
+    "subject": "Order hasn't arrived yet",
+    "body": "Hi,\n\nI ordered one of your storage cases about 8 days ago and haven't received any updates since.\n\nCould you please check where it is?\n\nThank you,\nAnna",
+    "fromName": "Anna",
+    "expectedCategory": "shipping_delivery_order_issue",
+    "expectedSafeToDraft": true,
+    "expectedTone": "Reassuring + proactive"
+  },
+  {
+    "name": "2. Damaged product (high emotion)",
+    "subject": "Issue with my order",
+    "body": "Hi,\n\nMy order arrived today but unfortunately the lid is scratched and doesn't close properly.\n\nIt's a beautiful piece otherwise, so I'd really appreciate your help resolving this.\n\nKind regards,\nMichael",
+    "fromName": "Michael",
+    "expectedCategory": "damaged_missing_faulty",
+    "expectedSafeToDraft": true,
+    "expectedTone": "Empathetic + premium (not transactional)"
+  },
+  {
+    "name": "3. Pre-purchase (high-value conversion)",
+    "subject": "Question before purchasing",
+    "body": "Hi,\n\nI'm considering purchasing one of your organisers and wanted to ask if it's suitable for watches as well as jewellery?\n\nThanks so much,\nDavid",
+    "fromName": "David",
+    "expectedCategory": "pre_purchase_question",
+    "expectedSafeToDraft": true,
+    "expectedTone": "Consultative, not pushy"
+  },
+  {
+    "name": "4. Returns (friction moment)",
+    "subject": "Return request",
+    "body": "Hi,\n\nI received my order but it's not quite what I was expecting.\n\nCould you please let me know how to arrange a return?\n\nBest,\nSophie",
+    "fromName": "Sophie",
+    "expectedCategory": "return_refund_exchange",
+    "expectedSafeToDraft": true,
+    "expectedTone": "Smooth, low-friction, brand-protective"
+  },
+  {
+    "name": "5. Cancellation (time-sensitive)",
+    "subject": "Cancel my order please",
+    "body": "Hi,\n\nI just placed an order but need to cancel it urgently.\n\nCan you stop it before it ships?\n\nThanks,\nChris",
+    "fromName": "Chris",
+    "expectedCategory": "order_modification_cancellation",
+    "expectedSafeToDraft": true,
+    "expectedTone": "Fast, action-oriented"
+  },
+  {
+    "name": "6. Billing issue (trust-sensitive)",
+    "subject": "Charged twice?",
+    "body": "Hi,\n\nI think I may have been charged twice for my order.\n\nCan you please confirm and assist?\n\nThanks,\nRachel",
+    "fromName": "Rachel",
+    "expectedCategory": "account_billing_payment",
+    "expectedSafeToDraft": true,
+    "expectedTone": "Calm + confidence-building"
+  },
+  {
+    "name": "7. Wholesale / partnership (manual)",
+    "subject": "Retail partnership enquiry",
+    "body": "Hi,\n\nI own a boutique interiors store in Melbourne and would love to explore stocking your products.\n\nCould you share your wholesale details?\n\nWarm regards,\nIsabella",
+    "fromName": "Isabella",
+    "expectedCategory": "partnership_wholesale_press",
+    "expectedSafeToDraft": true,
+    "expectedTone": "Professional, direct"
+  },
+  {
+    "name": "8. Praise / UGC (manual but valuable)",
+    "subject": "Absolutely love my order",
+    "body": "Hi,\n\nJust wanted to say how beautiful the piece is — it looks incredible in my space.\n\nThank you for such a thoughtful product.\n\nBest,\nClaire",
+    "fromName": "Claire",
+    "expectedCategory": "praise_testimonial_ugc",
+    "expectedSafeToDraft": true,
+    "expectedTone": "Genuine, warm, personal"
+  },
+  {
+    "name": "9. Spam / solicitation (ignore)",
+    "subject": "Increase your sales by 300%",
+    "body": "Hi,\n\nWe help ecommerce brands scale to 7 figures in 90 days.\n\nLet's book a quick call this week.\n\nBest,\nTom",
+    "fromName": "Tom",
+    "expectedCategory": "spam_solicitation",
+    "expectedSafeToDraft": false,
+    "expectedTone": "N/A (should be ignored)"
+  },
+  {
+    "name": "10. Ambiguous / edge case (critical test)",
+    "subject": "Quick question",
+    "body": "Hi,\n\nI received something but I'm not sure if it's correct.\n\nCan you help?",
+    "fromName": "Customer",
+    "expectedCategory": "other_uncategorized",
+    "expectedSafeToDraft": false,
+    "expectedTone": "Neutral, requesting clarification"
+  }
+]

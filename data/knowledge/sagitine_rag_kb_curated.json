@@ -1,0 +1,1441 @@
+{
+  "audit_report": {
+    "kept": [
+      "knowledge_snippets.json - gold_responses: All 3 entries (excellent Heidi voice, on-brand)",
+      "knowledge_snippets.json - policy_rules: All 5 entries (clear, operational)",
+      "knowledge_snippets.json - product_knowledge: All 4 entries (accurate, TOV-compliant)",
+      "knowledge_snippets.json - scenario_tags: All 6 entries (useful retrieval signals)",
+      "extracted_rag_knowledge.json - Box Terminology fact (critical TOV rule)",
+      "extracted_rag_knowledge.json - Box Care Instructions (operational value)",
+      "extracted_rag_knowledge.json - Assembly Guidelines (operational value)",
+      "gold_responses.json - All 7 templates (structure good, needs action_type normalisation and Heidi voice)"
+    ],
+    "rewritten": [
+      "gold_responses.json - templates: Normalised action_type from 'educate_customer' to 'provide_information'",
+      "gold_responses.json - templates: Normalised action_type from 'request_information' to 'request_info'",
+      "gold_responses.json - All templates: Replaced generic placeholders with Heidi-specific sign-off",
+      "gold_responses.json - All templates: Enhanced TOV compliance (drawer → Box terminology)",
+      "extracted_rag_knowledge.json - Damaged/Faulty Item Policy: Enhanced with action_type mapping and retrieval metadata",
+      "extracted_rag_knowledge.json - Shipping Policy: Split into edge case scenarios (lost, marked delivered not received, stolen, wrong address)",
+      "extracted_rag_knowledge.json - Returns Policy: Enhanced with large item pickup conditions"
+    ],
+    "merged": [
+      "Merged 'Box Terminology' from extracted_rag_knowledge.json with 'Storage Boxes vs. Drawers' from knowledge_snippets.json",
+      "Merged 'Assembly Guidelines' from extracted_rag_knowledge.json with 'Product Assembly' from knowledge_snippets.json",
+      "Consolidated duplicate policy entries where extracted_rag_knowledge and knowledge_snippets overlapped"
+    ],
+    "discarded": [
+      "extracted_rag_knowledge.json: Duplicate IDs (3 entries with same 'product_usage_guidance_fact' ID) - replaced with canonical versions",
+      "Generic templates from gold_responses.json that were too placeholder-heavy - replaced with more specific, Heidi-voice versions",
+      "Weak policy entries that lacked operational clarity - strengthened with specific when_to_apply guidance"
+    ],
+    "notes": [
+      "All action types normalised to live backend enum (provide_information, arrange_replacement, process_refund, escalate, request_info, decline_request, acknowledge_feedback, route_to_team)",
+      "All templates now use 'Warm regards, Heidi x' sign-off (not '[Your Name]')",
+      "Box/Boxes terminology enforced throughout",
+      "Brand/TOV retrieval layer added for reinforcement during strategy/draft/proof",
+      "Shipping edge cases now comprehensively covered (8 new templates)",
+      "Commercial boundary scenarios added (discount, goodwill, component separation)",
+      "Brand-risk de-escalation templates added (angry, frustrated, disappointed)",
+      "Product education scenarios strengthened (why not drawers, why tight fit, dust/airflow)",
+      "Operational CX scenarios added (missing instructions, back in stock, preorder, return pickup)"
+    ]
+  },
+
+  "gold_responses": [
+    {
+      "id": "gold_missing_stand_components",
+      "title": "Missing Stand Components",
+      "scenario_summary": "Customer reports missing hardware or components needed for assembly",
+      "category": "damaged_missing_faulty",
+      "action_type": "request_info",
+      "full_text": "Hi [Customer Name],\n\nThank you so much for your message.\n\nThat's certainly not how your order should have arrived. If you're able to send through a couple of photos of what you received, I'll take a look straight away and organise the correct replacement parts for you.\n\nWe'll get this sorted as quickly as possible.\n\nWarm regards,\nHeidi x",
+      "why_high_quality": [
+        "Validates the issue without over-apologising",
+        "Clear next step (photos) before taking action",
+        "Reassuring without making premature promises",
+        "Warm, personal sign-off consistent with brand"
+      ],
+      "mustInclude": [
+        "Validation that arrival was not as expected",
+        "Request for photos to identify missing parts",
+        "Reassurance of quick resolution"
+      ],
+      "mustAvoid": [
+        "Over-apologising ('I'm sorry', 'We apologise')",
+        "Making customer feel responsible",
+        "Promising specific dispatch timeline before seeing photos"
+      ],
+      "scenario_tags": ["hardware_missing", "first_contact", "urgent"],
+      "applicability": {
+        "urgency_range": "High (8-10)",
+        "risk_levels": "Medium (product cannot be assembled)",
+        "context_signals": ["new_delivery", "assembly_phase"]
+      },
+      "retrieval_metadata": {
+        "summary": "Requests photos to quickly replace missing hardware or components from a new delivery.",
+        "keywords": ["missing", "parts", "components", "hardware", "photos", "replacement", "assembly"],
+        "confidence_signals": "Use when customer reports they cannot finish assembly because pieces are missing from the delivery."
+      }
+    },
+    {
+      "id": "gold_box_vs_drawer_education",
+      "title": "Box vs Drawer Design Intent",
+      "scenario_summary": "Customer asks about gluing boxes or complains boxes are hard to open",
+      "category": "product_usage_guidance",
+      "action_type": "provide_information",
+      "full_text": "Hi [Customer Name],\n\nThank you so much for your message.\n\nThe first thing to note is that the Sagitine Boxes are designed as storage boxes, not drawers. They sit within the frame rather than on runners, which allows you to remove, reorganise, and protect your pieces more effectively over time.\n\nBecause of this, they are intentionally a more considered interaction. Many customers find it becomes very natural quite quickly, particularly when using two hands to open the Boxes.\n\nI hope that context is helpful, and of course please reach out if you have any other questions.\n\nWarm regards,\nHeidi x",
+      "why_high_quality": [
+        "Educates without sounding dismissive",
+        "Explains design intent (storage boxes vs drawers)",
+        "Highlights premium construction to justify advice",
+        "Maintains helpful, conversational tone"
+      ],
+      "mustInclude": [
+        "Explanation of 'storage box' vs 'drawer' concept",
+        "Mention of removing/reorganising benefits",
+        "Tip to use two hands for the interaction"
+      ],
+      "mustAvoid": [
+        "Saying the product is 'supposed to be hard to open'",
+        "Apologising for the design intent",
+        "Suggesting home modifications (wax, runners)"
+      ],
+      "scenario_tags": ["product_friction", "educational", "post_purchase"],
+      "applicability": {
+        "urgency_range": "Low (2-4)",
+        "risk_levels": "Low (manageable friction)",
+        "context_signals": ["new_customer", "usage_complaint"]
+      },
+      "retrieval_metadata": {
+        "summary": "Explains that Sagitine Boxes are meant to be removed completely and are not traditional sliding drawers.",
+        "keywords": ["hard to open", "drawers", "runners", "two hands", "storage boxes", "design intention", "friction"],
+        "confidence_signals": "Use when a customer complains about boxes being difficult to slide in and out or asks for advice on operation."
+      }
+    },
+    {
+      "id": "gold_no_return_damaged_paper_boxes",
+      "title": "No Return Required for Damaged Paper Boxes",
+      "scenario_summary": "Damaged paper-based boxes replaced without requiring return",
+      "category": "return_refund_exchange",
+      "action_type": "arrange_replacement",
+      "full_text": "Hi [Customer Name],\n\nThat's no trouble at all.\n\nThere is no need to return the damaged Boxes. If you're able to find another use for them, that would be lovely, and if not, please feel free to recycle them.\n\nI'll arrange the refund to the same payment method used for your order once confirmed.\n\nWarm regards,\nHeidi x",
+      "why_high_quality": [
+        "Reduces friction by not demanding return of low-salvage item",
+        "Provides environmentally conscious suggestion",
+        "Clearly states resolution and refund process"
+      ],
+      "mustInclude": [
+        "Confirmation that return is not required",
+        "Suggestion to repurpose or recycle",
+        "Clear statement of refund process"
+      ],
+      "mustAvoid": [
+        "Demanding return of damaged paper boxes",
+        "Over-apologising for the damage",
+        "Making refund timeline sound immediate"
+      ],
+      "scenario_tags": ["damaged_paper_boxes", "refund_only", "environmental"],
+      "applicability": {
+        "urgency_range": "Medium (5-7)",
+        "risk_levels": "Low (customer is relieved by no-return policy)",
+        "context_signals": ["paper_boxes_damaged", "replacement_or_refund"]
+      },
+      "retrieval_metadata": {
+        "summary": "Confirms damaged paper-based Boxes do not need to be returned and offers refund.",
+        "keywords": ["no return", "damaged boxes", "recycle", "repurpose", "refund"],
+        "confidence_signals": "Use when paper-based Boxes arrive damaged and customer asks about returning them."
+      }
+    },
+    {
+      "id": "gold_refund_over_replacement",
+      "title": "Refund Instead of Replacement",
+      "scenario_summary": "Customer prefers refund over replacement for faulty/damaged item",
+      "category": "return_refund_exchange",
+      "action_type": "process_refund",
+      "full_text": "Hi [Customer Name],\n\nThank you for your message.\n\nThat's absolutely fine. I'll arrange your refund back to the same payment method used for your order. It typically takes around 3 business days to appear, although some banks can take up to 10.\n\nPlease just confirm that you're happy for me to process it that way.\n\nWarm regards,\nHeidi x",
+      "why_high_quality": [
+        "Accepts customer preference without pushing back",
+        "Sets realistic timeline expectation (3-10 days)",
+        "Asks for confirmation before processing"
+      ],
+      "mustInclude": [
+        "Acceptance of refund preference",
+        "Timeline expectation (3 to 10 business days)",
+        "Confirmation request before processing"
+      ],
+      "mustAvoid": [
+        "Pushing back to convince them to take replacement",
+        "Promising immediate funds availability",
+        "Processing without customer confirmation"
+      ],
+      "scenario_tags": ["refund_request", "resolution_phase", "customer_preference"],
+      "applicability": {
+        "urgency_range": "Medium (5-7)",
+        "risk_levels": "Low (customer is agreed to terms)",
+        "context_signals": ["customer_declined_replacement"]
+      },
+      "retrieval_metadata": {
+        "summary": "Confirms a customer's request for a refund instead of a replacement, outlining standard banking timelines.",
+        "keywords": ["refund", "money back", "3 business days", "bank timeline", "payment method"],
+        "confidence_signals": "Use when customer explicitly asks for a refund after a fault/issue is identified, rather than requesting new parts."
+      }
+    }
+  ],
+
+  "templates": [
+    {
+      "id": "template_shipping_lost_in_transit",
+      "title": "Lost in Transit - Investigation",
+      "category": "shipping_delivery_order_issue",
+      "action_type": "request_info",
+      "body_template": "Hi [Customer Name],\n\nThank you for reaching out about your delivery.\n\nI can see that tracking hasn't updated for some time. Let me investigate this with the courier for you straight away.\n\nI'll follow up with them and get back to you within 24 hours with an update.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Composed, proactive, taking ownership without over-apologising",
+      "mustInclude": [
+        "Acknowledgement that tracking is stalled",
+        "Commitment to investigate with courier",
+        "Clear timeline for follow-up (24 hours)"
+      ],
+      "mustAvoid": [
+        "Admitting fault before investigation",
+        "Promising immediate replacement",
+        "Blaming courier directly"
+      ],
+      "scenario_tags": ["lost_in_transit", "tracking_stalled", "investigation"],
+      "applicability": {
+        "urgency_range": "High (8-9)",
+        "risk_levels": "Medium (package may still be found)",
+        "context_signals": ["tracking_not_updated", "beyond_expected_window"]
+      },
+      "retrieval_metadata": {
+        "summary": "Initiates courier investigation when tracking shows no movement beyond expected delivery window.",
+        "keywords": ["lost", "tracking", "investigation", "courier", "24 hours"],
+        "confidence_signals": "Use when tracking hasn't updated for more than 3 days beyond expected delivery date."
+      }
+    },
+    {
+      "id": "template_shipping_marked_delivered_not_received",
+      "title": "Marked Delivered But Not Received",
+      "category": "shipping_delivery_order_issue",
+      "action_type": "request_info",
+      "body_template": "Hi [Customer Name],\n\nThank you for letting me know.\n\nI can see that tracking shows as delivered, though I understand you haven't received your package. Let me look into this for you.\n\nCould you please check if it might have been left in a safe spot, with a neighbour, or at a nearby collection point? Sometimes couriers leave a calling card with details.\n\nIf you're still unable to locate it, please let me know and I'll raise an investigation with the courier.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Helpful and systematic, not dismissive of customer's claim",
+      "mustInclude": [
+        "Acknowledgement of delivered status",
+        "Practical suggestions for where it might be",
+        "Commitment to investigate if not found"
+      ],
+      "mustAvoid": [
+        "Accusing customer of being mistaken",
+        "Refusing to investigate",
+        "Immediately offering replacement"
+      ],
+      "scenario_tags": ["marked_delivered", "not_received", "courier_investigation"],
+      "applicability": {
+        "urgency_range": "High (8-9)",
+        "risk_levels": "Medium (may be found nearby)",
+        "context_signals": ["tracking_delivered", "customer_claims_not_received"]
+      },
+      "retrieval_metadata": {
+        "summary": "Guides customer to check nearby locations before initiating courier investigation for marked-as-delivered packages.",
+        "keywords": ["marked delivered", "not received", "safe spot", "neighbour", "collection point", "investigation"],
+        "confidence_signals": "Use when tracking shows 'Delivered' but customer claims they did not receive the package."
+      }
+    },
+    {
+      "id": "template_shipping_stolen_after_delivery",
+      "title": "Stolen After Delivery",
+      "category": "shipping_delivery_order_issue",
+      "action_type": "escalate",
+      "body_template": "Hi [Customer Name],\n\nThank you for letting me know.\n\nI'm so sorry to hear that your package was taken after delivery. I understand how frustrating that must be.\n\nLet me raise a claim with the courier and also provide you with a police report number that may help with any insurance claim you wish to make.\n\nI'll be in touch within 24-48 hours with next steps.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Empathetic while maintaining professional distance, takes ownership of resolution",
+      "mustInclude": [
+        "Acknowledgement of theft incident",
+        "Courier claim initiation",
+        "Offer of police report number support",
+        "Clear follow-up timeline"
+      ],
+      "mustAvoid": [
+        "Admitting liability immediately",
+        "Promising automatic replacement",
+        "Dismissing the claim"
+      ],
+      "scenario_tags": ["stolen", "theft", "courier_claim", "police_report"],
+      "applicability": {
+        "urgency_range": "High (9-10)",
+        "risk_levels": "High (potential loss, legal considerations)",
+        "context_signals": ["package_stolen", "security_footage_available", "police_report_filed"]
+      },
+      "retrieval_metadata": {
+        "summary": "Handles theft-after-delivery reports with courier claim and police report support.",
+        "keywords": ["stolen", "theft", "courier claim", "police report", "insurance"],
+        "confidence_signals": "Use when customer confirms package was stolen from their property after delivery."
+      }
+    },
+    {
+      "id": "template_shipping_wrong_address",
+      "title": "Wrong Address Entered by Customer",
+      "category": "shipping_delivery_order_issue",
+      "action_type": "provide_information",
+      "body_template": "Hi [Customer Name],\n\nThank you for reaching out.\n\nI can see that the order was shipped to the address provided at checkout. Unfortunately, once an order has been dispatched, I'm not able to redirect it in transit.\n\nIf the package is returned to us as undeliverable, I'll be in touch to arrange reshipment to the correct address.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Clear and factual, not accusatory, sets expectations appropriately",
+      "mustInclude": [
+        "Confirmation of what address was used",
+        "Explanation that redirection is not possible in transit",
+        "What happens if package is returned"
+      ],
+      "mustAvoid": [
+        "Blaming customer for the error",
+        "Promising they can intercept the package",
+        "Offering refund before exploring options"
+      ],
+      "scenario_tags": ["wrong_address", "customer_error", "undeliverable"],
+      "applicability": {
+        "urgency_range": "Medium (5-7)",
+        "risk_levels": "Low (customer's error, not brand's)",
+        "context_signals": ["address_mistyped", "recently_dispatched", "not_yet_delivered"]
+      },
+      "retrieval_metadata": {
+        "summary": "Explains that orders shipped to incorrect addresses cannot be redirected in transit.",
+        "keywords": ["wrong address", "customer entered", "redirect", "undeliverable", "returned to sender"],
+        "confidence_signals": "Use when customer realises they entered the wrong address and order has already been dispatched."
+      }
+    },
+    {
+      "id": "template_shipping_courier_delay",
+      "title": "Courier Delay Beyond Expected Window",
+      "category": "shipping_delivery_order_issue",
+      "action_type": "provide_information",
+      "body_template": "Hi [Customer Name],\n\nThank you for checking in on your order.\n\nI can see that your package is in transit with the courier, though it appears to be moving a little more slowly than expected. This sometimes happens during particularly busy periods.\n\nYour estimated delivery is now [updated timeframes]. I'll continue monitoring your tracking and will reach out if there are any further updates.\n\nThank you for your patience.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Reassuring and transparent, not defensive about courier performance",
+      "mustInclude": [
+        "Confirmation that package is still in transit",
+        "Acknowledgement of delay",
+        "Updated delivery estimate",
+        "Commitment to monitor"
+      ],
+      "mustAvoid": [
+        "Blaming courier extensively",
+        "Making promises about expedited shipping",
+        "Over-apologising for courier delays"
+      ],
+      "scenario_tags": ["courier_delay", "beyond_expected_window", "monitoring"],
+      "applicability": {
+        "urgency_range": "Medium (6-7)",
+        "risk_levels": "Low (delay is temporary)",
+        "context_signals": ["tracking_active", "beyond_estimated_date", "still_in_transit"]
+      },
+      "retrieval_metadata": {
+        "summary": "Provides updated delivery estimates when courier delays occur beyond expected window.",
+        "keywords": ["courier delay", "beyond window", "slow transit", "busy period", "updated estimate"],
+        "confidence_signals": "Use when tracking shows movement but package is beyond estimated delivery date."
+      }
+    },
+    {
+      "id": "template_shipping_partial_delivery",
+      "title": "Partial Delivery - Missing Carton",
+      "category": "shipping_delivery_order_issue",
+      "action_type": "request_info",
+      "body_template": "Hi [Customer Name],\n\nThank you for letting me know.\n\nI can see that your order was shipped in multiple packages. It looks like the second carton is still on its way to you.\n\nThe tracking for the remaining package is [tracking link]. Your expected delivery for that carton is [timeframe].\n\nIf you don't receive it by [date], please let me know and I'll investigate further.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Clear and reassuring, provides concrete information",
+      "mustInclude": [
+        "Confirmation that order was split into multiple packages",
+        "Tracking information for missing carton",
+        "Expected delivery timeframe",
+        "Follow-up date if not received"
+      ],
+      "mustAvoid": [
+        "Assuming it's lost without checking tracking",
+        "Immediately offering replacement",
+        "Making customer feel anxious about the missing package"
+      ],
+      "scenario_tags": ["partial_delivery", "missing_carton", "multiple_packages"],
+      "applicability": {
+        "urgency_range": "Medium (5-7)",
+        "risk_levels": "Low (other carton is still in transit)",
+        "context_signals": ["partial_receipt", "multiple_tracking_numbers", "split_shipment"]
+      },
+      "retrieval_metadata": {
+        "summary": "Explains partial deliveries and provides tracking for remaining cartons.",
+        "keywords": ["partial delivery", "missing carton", "split shipment", "multiple packages", "tracking"],
+        "confidence_signals": "Use when customer receives only part of their order and other cartons are still in transit."
+      }
+    },
+    {
+      "id": "template_commercial_missed_sale_just_missed",
+      "title": "Just Missed Sale / Offer",
+      "category": "brand_feedback_general",
+      "action_type": "decline_request",
+      "body_template": "Hi [Customer Name],\n\nThank you for your message.\n\nI understand you're disappointed to have just missed our recent promotion. Unfortunately, I'm not able to apply discount codes retrospectively to orders that have already been placed.\n\nWe do run promotions throughout the year, so I'd recommend keeping an eye on your email for future offers.\n\nI hope you understand, and thank you for shopping with Sagitine.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Firm but kind, not robotic, acknowledges disappointment without conceding",
+      "mustInclude": [
+        "Acknowledgement of disappointment",
+        "Clear explanation that retrospective discounts are not possible",
+        "Mention of future promotional opportunities"
+      ],
+      "mustAvoid": [
+        "Making exceptions that set precedent",
+        "Being dismissive of customer's frustration",
+        "Promising specific future discounts"
+      ],
+      "scenario_tags": ["missed_sale", "discount_request", "retrospective_pricing"],
+      "applicability": {
+        "urgency_range": "Low (2-4)",
+        "risk_levels": "Low (request, not demand)",
+        "context_signals": ["sale_ended_recently", "customer_just_missed", "retrospective_discount_requested"]
+      },
+      "retrieval_metadata": {
+        "summary": "Declines requests to apply recently-ended promotions to existing orders.",
+        "keywords": ["missed sale", "just missed", "retrospective discount", "promotion ended", "cannot apply"],
+        "confidence_signals": "Use when customer asks to apply a discount code that just expired to their recent order."
+      }
+    },
+    {
+      "id": "template_commercial_discount_code_failed",
+      "title": "Discount Code Failed",
+      "category": "account_billing_payment",
+      "action_type": "provide_information",
+      "body_template": "Hi [Customer Name],\n\nThank you for reaching out.\n\nI'm sorry to hear that the discount code didn't work at checkout. Let me help troubleshoot this.\n\nCould you please confirm:\n- The exact code you tried to use\n- Whether any error message appeared\n- The type of discount (percentage, fixed amount, free shipping)\n\nOnce I have those details, I'll be able to look into what went wrong and get this sorted for you.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Helpful and troubleshooting-oriented, not dismissive",
+      "mustInclude": [
+        "Acknowledgement that code failed",
+        "Request for specific details to troubleshoot",
+        "Commitment to resolve the issue"
+      ],
+      "mustAvoid": [
+        "Assuming customer made error",
+        "Refusing to honour valid code",
+        "Promising immediate resolution without investigating"
+      ],
+      "scenario_tags": ["discount_code", "checkout_error", "troubleshooting"],
+      "applicability": {
+        "urgency_range": "Medium (5-7)",
+        "risk_levels": "Medium (customer may abandon cart)",
+        "context_signals": ["code_not_working", "checkout_problem", "customer_frustrated"]
+      },
+      "retrieval_metadata": {
+        "summary": "Troubleshoots failed discount codes by requesting details to investigate and resolve.",
+        "keywords": ["discount code", "not working", "failed", "checkout", "error message", "troubleshoot"],
+        "confidence_signals": "Use when customer reports that a discount code failed at checkout."
+      }
+    },
+    {
+      "id": "template_commercial_free_shipping_request",
+      "title": "Free Shipping Request (Below Threshold)",
+      "category": "account_billing_payment",
+      "action_type": "decline_request",
+      "body_template": "Hi [Customer Name],\n\nThank you for your message.\n\nI understand you'd like free shipping added to your order. Unfortunately, our free shipping threshold is [amount], and I'm not able to adjust the shipping cost for orders below that amount.\n\nWe do regularly offer free shipping promotions, so I'd recommend keeping an eye on your email for those opportunities.\n\nThank you for your understanding.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Polite and clear, not defensive about the policy",
+      "mustInclude": [
+        "Acknowledgement of request",
+        "Clear statement of free shipping threshold",
+        "Mention of future promotional opportunities"
+      ],
+      "mustAvoid": [
+        "Making exceptions that set precedent",
+        "Being apologetic about the policy",
+        "Suggesting ways to game the system"
+      ],
+      "scenario_tags": ["free_shipping", "below_threshold", "shipping_cost_request"],
+      "applicability": {
+        "urgency_range": "Low (2-4)",
+        "risk_levels": "Low (request, not demand)",
+        "context_signals": ["order_below_threshold", "free_shipping_requested", "customer_hesitant"]
+      },
+      "retrieval_metadata": {
+        "summary": "Declines requests to add free shipping to orders below the threshold amount.",
+        "keywords": ["free shipping", "below threshold", "shipping cost", "cannot adjust"],
+        "confidence_signals": "Use when customer asks for free shipping on an order below the free shipping threshold."
+      }
+    },
+    {
+      "id": "template_commercial_component_separation",
+      "title": "Component Separation - Buying Boxes Separately",
+      "category": "stock_availability",
+      "action_type": "decline_request",
+      "body_template": "Hi [Customer Name],\n\nThank you for your interest in our products.\n\nI understand you're looking to purchase additional Boxes for your Stand. At the moment, we don't offer components for individual sale. Our pieces are designed as complete systems, and we've found that they work best when used together as intended.\n\nI'm happy to discuss full system options if you're considering expanding your storage setup.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Clear about design philosophy, not dismissive of customer need",
+      "mustInclude": [
+        "Acknowledgement of request",
+        "Clear statement that components are not sold separately",
+        "Explanation of design philosophy (complete systems)",
+        "Alternative suggestion (full system expansion)"
+      ],
+      "mustAvoid": [
+        "Being definitive about 'never' (policies change)",
+        "Making customer feel unreasonable for asking",
+        "Suggesting third-party alternatives"
+      ],
+      "scenario_tags": ["component_separation", "boxes_only", "stand_only", "system_philosophy"],
+      "applicability": {
+        "urgency_range": "Low (2-4)",
+        "risk_levels": "Low (product philosophy question, not defect)",
+        "context_signals": ["customer_has_stand", "wants_more_boxes", "component_purchase"]
+      },
+      "retrieval_metadata": {
+        "summary": "Explains that Sagitine products are sold as complete systems, not individual components.",
+        "keywords": ["component", "separate sale", "boxes only", "stand only", "complete system", "designed together"],
+        "confidence_signals": "Use when customer asks to purchase individual Boxes or Stands separately from complete systems."
+      }
+    },
+    {
+      "id": "template_de_escalation_frustrated_customer",
+      "title": "Frustrated Customer - De-escalation",
+      "category": "damaged_missing_faulty",
+      "action_type": "acknowledge_feedback",
+      "body_template": "Hi [Customer Name],\n\nThank you for sharing your experience with me.\n\nI can hear how frustrated you are, and I want to make this right. Let me understand what's happened so I can find the best solution for you.\n\nCould you help me by confirming [specific detail needed]? Once I have that information, I'll be able to move forward with resolving this for you.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Validating and calm, takes ownership without being defensive",
+      "mustInclude": [
+        "Acknowledgement of customer's frustration",
+        "Commitment to make it right",
+        "Request for specific information needed to resolve",
+        "Reassurance of resolution path"
+      ],
+      "mustAvoid": [
+        "Matching their anger with defensiveness",
+        "Making promises that can't be kept",
+        "Dismissing their frustration as unreasonable"
+      ],
+      "scenario_tags": ["frustrated", "escalated", "de_escalation", "emotional"],
+      "applicability": {
+        "urgency_range": "High (9-10)",
+        "risk_levels": "High (customer may leave negative review or escalate further)",
+        "context_signals": ["multiple_contacts", "angry_language", "threat_language"]
+      },
+      "retrieval_metadata": {
+        "summary": "De-escalates frustrated customers by validating emotions and committing to resolution.",
+        "keywords": ["frustrated", "angry", "escalated", "make it right", "understand", "resolution"],
+        "confidence_signals": "Use when customer language indicates frustration, anger, or escalation (e.g., multiple emails, exclamation marks, threat language)."
+      }
+    },
+    {
+      "id": "template_de_escalation_disappointed_expectations",
+      "title": "Product Doesn't Meet Expectations",
+      "category": "brand_feedback_general",
+      "action_type": "acknowledge_feedback",
+      "body_template": "Hi [Customer Name],\n\nThank you for sharing your honest feedback with me.\n\nI'm sorry to hear that the [Box Name] hasn't met your expectations. I understand how disappointing that feels when you've been looking forward to something.\n\nI'd value the opportunity to understand more about what didn't align with what you were expecting. This kind of feedback helps us continually improve our products and communication.\n\nWould you be open to sharing a bit more detail about what specifically didn't meet your expectations?\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Genuinely curious, not defensive, positions feedback as valuable improvement data",
+      "mustInclude": [
+        "Acknowledgement of disappointment",
+        "Request for specific feedback",
+        "Positioning feedback as helpful for improvement",
+        "Open invitation to share more"
+      ],
+      "mustAvoid": [
+        "Being defensive about the product",
+        "Trying to 'sell' them on why they should like it",
+        "Over-apologising (validate, don't grovel)"
+      ],
+      "scenario_tags": ["disappointed", "expectations_not_met", "feedback_request", "product_experience"],
+      "applicability": {
+        "urgency_range": "Medium (5-7)",
+        "risk_levels": "Medium (may indicate product-market fit issue)",
+        "context_signals": ["doesn't_look_like_photos", "not_what_expected", "quality_concern"]
+      },
+      "retrieval_metadata": {
+        "summary": "Requests detailed feedback when product doesn't meet customer expectations.",
+        "keywords": ["disappointed", "not what I expected", "doesn't look like photos", "expectations", "feedback"],
+        "confidence_signals": "Use when customer expresses that product doesn't match expectations or photos."
+      }
+    },
+    {
+      "id": "template_product_education_why_not_drawers",
+      "title": "Why Boxes Are Not Drawers - Design Philosophy",
+      "category": "product_usage_guidance",
+      "action_type": "provide_information",
+      "body_template": "Hi [Customer Name],\n\nThank you for your question about the design.\n\nSagitine Boxes are intentionally designed as storage boxes rather than drawers. This design choice allows you to:\n- Remove Boxes completely to access contents\n- Reorganise your storage as your needs change\n- Protect pieces by keeping them enclosed when not in use\n- Stack and store Boxes separately from the Stand\n\nUnlike drawers on runners, this approach gives you more flexibility in how you use and organise your pieces over time.\n\nI hope that helps explain the thinking behind the design!\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Educational and enthusiastic about design intent, not defensive",
+      "mustInclude": [
+        "Clear explanation of storage box vs drawer concept",
+        "Benefits of the design approach",
+        "Flexibility emphasis",
+        "Positive framing of design intent"
+      ],
+      "mustAvoid": [
+        "Apologising for the design",
+        "Acting as if customer should already know this",
+        "Suggesting modifications to make them more drawer-like"
+      ],
+      "scenario_tags": ["product_education", "design_philosophy", "boxes_vs_drawers", "flexibility"],
+      "applicability": {
+        "urgency_range": "Low (2-4)",
+        "risk_levels": "Low (education request, not complaint)",
+        "context_signals": ["why_boxes_not_drawers", "design_question", "curiosity"]
+      },
+      "retrieval_metadata": {
+        "summary": "Explains the design philosophy behind why Sagitine products are boxes, not drawers.",
+        "keywords": ["why not drawers", "design philosophy", "storage boxes", "flexibility", "remove completely", "reorganise"],
+        "confidence_signals": "Use when customer asks why Boxes don't slide like traditional drawers."
+      }
+    },
+    {
+      "id": "template_product_education_tight_fit_explanation",
+      "title": "Why Fit Can Feel Tight - Precision Engineering",
+      "category": "product_usage_guidance",
+      "action_type": "provide_information",
+      "body_template": "Hi [Customer Name],\n\nThank you for your question about the fit.\n\nSagitine Boxes are designed with a precise fit within the Stand frame. This intentional tightness serves several purposes:\n- Prevents Boxes from shifting during normal use\n- Maintains the clean, seamless aesthetic\n- Ensures Boxes sit securely without wobbling\n\nWhen new, the fit can feel particularly snug. This typically relaxes slightly with regular use as the Boxes settle into the frame.\n\nUsing two hands to remove Boxes - one to stabilise the Stand and one to lift the Box - makes the interaction much smoother.\n\nI hope that helps!\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Informative and reassuring, not dismissive of the friction concern",
+      "mustInclude": [
+        "Explanation that tight fit is intentional",
+        "Benefits of the precise fit",
+        "Reassurance that it settles with use",
+        "Practical tip (two hands)"
+      ],
+      "mustAvoid": [
+        "Saying the product is 'supposed to be difficult'",
+        "Implying customer is using it wrong",
+        "Suggesting home modifications"
+      ],
+      "scenario_tags": ["tight_fit", "stiff", "hard_to_remove", "precision_engineering"],
+      "applicability": {
+        "urgency_range": "Low (2-4)",
+        "risk_levels": "Low (characteristic, not defect)",
+        "context_signals": ["tight_fit", "hard_to_open", "stiff_boxes", "new_product"]
+      },
+      "retrieval_metadata": {
+        "summary": "Explains that tight Box fit is intentional for stability and aesthetics.",
+        "keywords": ["tight fit", "stiff", "hard to remove", "precise fit", "two hands", "settles with use"],
+        "confidence_signals": "Use when customer complains that Boxes are hard to remove or fit feels too tight."
+      }
+    },
+    {
+      "id": "template_product_education_dust_airflow_storage",
+      "title": "Dust Protection and Airflow Benefits",
+      "category": "product_usage_guidance",
+      "action_type": "provide_information",
+      "body_template": "Hi [Customer Name],\n\nThank you for your question about dust protection.\n\nSagitine Boxes are designed as enclosed storage boxes rather than open drawers, which provides excellent dust protection for your pieces. When the Box is sitting in the Stand, the minimal gap between the Box and frame is intentional - it allows for:\n- Air circulation to prevent moisture buildup\n- Easy removal without friction\n- Flexibility to remove Boxes completely when needed\n\nFor pieces that are being stored long-term, you might also consider using garment bags within the Boxes for an extra layer of protection.\n\nI hope that helps with your storage planning!\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Helpful and solution-oriented, not defensive about the design",
+      "mustInclude": [
+        "Acknowledgement that enclosed design protects from dust",
+        "Explanation of why gap exists (airflow, removal)",
+        "Practical suggestion for long-term storage (garment bags)",
+        "Positive framing"
+      ],
+      "mustAvoid": [
+        "Being defensive about dust concerns",
+        "Over-promising about complete dust exclusion",
+        "Suggesting modifications to close the gap"
+      ],
+      "scenario_tags": ["dust_protection", "airflow", "storage_benefits", "long_term_storage"],
+      "applicability": {
+        "urgency_range": "Low (2-4)",
+        "risk_levels": "Low (pre-purchase or usage question)",
+        "context_signals": ["dust_concern", "airflow_question", "storage_clarification"]
+      },
+      "retrieval_metadata": {
+        "summary": "Explains the balance between dust protection and airflow in the enclosed box design.",
+        "keywords": ["dust", "airflow", "enclosed", "gap", "storage", "long-term", "garment bags"],
+        "confidence_signals": "Use when customer asks about dust protection or notices the gap between Box and frame."
+      }
+    },
+    {
+      "id": "template_product_education_paper_construction_limitations",
+      "title": "Paper-Based Construction - Care and Limitations",
+      "category": "product_usage_guidance",
+      "action_type": "provide_information",
+      "body_template": "Hi [Customer Name],\n\nThank you for your question about the Box construction.\n\nSagitine Boxes are crafted from a premium paper-based, hand-wrapped material. This construction gives them their distinctive aesthetic and lightweight feel, but it does mean they require some specific care:\n\n- Avoid using water or liquid cleaners (wipe clean with a dry, soft cloth)\n- Don't use adhesive, tape, or glue on the Boxes (this can damage the paper surface)\n- Keep away from direct heat sources or high humidity\n- For timber components, use food-safe timber oil quarterly to maintain the finish\n\nThis premium construction is part of what gives Sagitine pieces their character, and with proper care they'll serve you beautifully for years to come.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Proud of the premium construction while being clear about care requirements",
+      "mustInclude": [
+        "Explanation of paper-based, hand-wrapped construction",
+        "Clear care instructions (what to avoid)",
+        "Positive framing of premium characteristics",
+        "Longevity with proper care"
+      ],
+      "mustAvoid": [
+        "Being apologetic about the material choice",
+        "Over-explaining the manufacturing process",
+        "Making the care sound burdensome"
+      ],
+      "scenario_tags": ["paper_construction", "care_instructions", "premium_materials", "limitations"],
+      "applicability": {
+        "urgency_range": "Low (2-4)",
+        "risk_levels": "Low (education, not complaint)",
+        "context_signals": ["cleaning_question", "material_question", "care_instructions", "glue_adhesion"]
+      },
+      "retrieval_metadata": {
+        "summary": "Explains paper-based construction characteristics and necessary care guidelines.",
+        "keywords": ["paper-based", "hand-wrapped", "care", "cleaning", "not waterproof", "no glue", "premium construction"],
+        "confidence_signals": "Use when customer asks about cleaning, materials, or whether they can modify/adhere Boxes."
+      }
+    },
+    {
+      "id": "template_operational_missing_instructions",
+      "title": "Missing Assembly Instructions",
+      "category": "product_usage_guidance",
+      "action_type": "provide_information",
+      "body_template": "Hi [Customer Name],\n\nThank you for reaching out.\n\nI'm sorry to hear that the assembly instructions weren't in your package. Let me get those to you straight away.\n\nI've emailed the instruction guide to [email on file]. You should receive it within the next few minutes.\n\nIf you have any questions once you've reviewed the guide, please don't hesitate to ask. Assembly is straightforward and typically takes 5-10 minutes with the included Allen key.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Helpful and proactive, not defensive about the missing instructions",
+      "mustInclude": [
+        "Acknowledgement that instructions were missing",
+        "Immediate action (emailing instructions)",
+        "Reassurance that assembly is straightforward",
+        "Offer of further assistance"
+      ],
+      "mustAvoid": [
+        "Making customer feel like they lost them",
+        "Being defensive about quality control",
+        "Over-explaining the assembly process in email"
+      ],
+      "scenario_tags": ["missing_instructions", "assembly_help", "instructions_not_received"],
+      "applicability": {
+        "urgency_range": "High (8-9)",
+        "risk_levels": "Medium (customer cannot assemble without instructions)",
+        "context_signals": ["new_delivery", "cannot_assemble", "instructions_missing"]
+      },
+      "retrieval_metadata": {
+        "summary": "Immediately emails assembly instructions when they were missing from the package.",
+        "keywords": ["missing instructions", "assembly", "guide", "email", "Allen key", "5-10 minutes"],
+        "confidence_signals": "Use when customer reports that assembly instructions were not in the box."
+      }
+    },
+    {
+      "id": "template_operational_replacement_parts",
+      "title": "Replacement Parts Request",
+      "category": "damaged_missing_faulty",
+      "action_type": "request_info",
+      "body_template": "Hi [Customer Name],\n\nThank you for reaching out about replacement parts.\n\nI'd be happy to help you with this. To ensure I send you the correct replacement, could you please:\n\n1. Confirm which part you need (e.g., Box, Stand component, hardware, Allen key)\n2. Provide a photo if possible (this helps me identify the exact piece)\n3. Share your order number if you have it handy\n\nOnce I have those details, I'll organise the replacement to be shipped to you.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Helpful and systematic, not assuming what part is needed",
+      "mustInclude": [
+        "Willingness to provide replacement",
+        "Request for specific part identification",
+        "Request for photo confirmation",
+        "Request for order number"
+      ],
+      "mustAvoid": [
+        "Assuming what part they need without clarification",
+        "Promising immediate shipping before identifying correct part",
+        "Charging for replacement parts (unless clearly outside warranty)"
+      ],
+      "scenario_tags": ["replacement_parts", "spare_parts", "component_replacement"],
+      "applicability": {
+        "urgency_range": "Medium (5-7)",
+        "risk_levels": "Low (replacement request, not emergency)",
+        "context_signals": ["part_broken", "part_lost", "need_replacement"]
+      },
+      "retrieval_metadata": {
+        "summary": "Gathers information to identify and ship correct replacement parts.",
+        "keywords": ["replacement parts", "spare parts", "component", "photo", "order number", "identify correct part"],
+        "confidence_signals": "Use when customer requests replacement parts but doesn't specify exactly what they need."
+      }
+    },
+    {
+      "id": "template_operational_large_item_return_pickup",
+      "title": "Large Item Return - Pickup Conditions",
+      "category": "return_refund_exchange",
+      "action_type": "request_info",
+      "body_template": "Hi [Customer Name],\n\nThank you for letting me know you'd like to return your Stand.\n\nTo arrange the most suitable return pickup, I'll need to confirm a couple of details:\n\n1. Is the Stand currently disassembled, or is it still assembled?\n2. Do you still have the original packaging?\n\nOnce I have this information, I can book the appropriate courier pickup for you.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Organised and systematic, gathering information needed for smooth return",
+      "mustInclude": [
+        "Acknowledgement of return request",
+        "Request for assembly status (disassembled/assembled)",
+        "Request for packaging status",
+        "Commitment to book appropriate pickup"
+      ],
+      "mustAvoid": [
+        "Booking pickup without understanding state of item",
+        "Making customer responsible for finding packaging",
+        "Being vague about next steps"
+      ],
+      "scenario_tags": ["large_item_return", "stand_return", "pickup_logistics", "return_conditions"],
+      "applicability": {
+        "urgency_range": "Medium (5-7)",
+        "risk_levels": "Low (return in progress, not emergency)",
+        "context_signals": ["stand_return", "large_item", "courier_pickup_needed"]
+      },
+      "retrieval_metadata": {
+        "summary": "Gathers information about assembly and packaging status to book appropriate return pickup for large items.",
+        "keywords": ["large item", "stand return", "pickup", "disassembled", "original packaging", "courier"],
+        "confidence_signals": "Use when customer wants to return a Stand or other large item that requires courier pickup."
+      }
+    },
+    {
+      "id": "template_operational_click_and_collect_not_available",
+      "title": "Click and Collect Not Available",
+      "category": "shipping_delivery_order_issue",
+      "action_type": "decline_request",
+      "body_template": "Hi [Customer Name],\n\nThank you for your message.\n\nI understand you'd prefer to pick up your order, but unfortunately we don't currently offer a click-and-collect option. Our Sydney warehouse isn't set up for customer pickups or public access.\n\nAll orders are shipped directly to your chosen delivery address. Standard shipping typically takes 5-7 business days, or express shipping is available at checkout if you need your items sooner.\n\nI hope that helps, and thank you for your understanding.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Clear and polite, not defensive about the limitation",
+      "mustInclude": [
+        "Acknowledgement of pickup request",
+        "Clear statement that click-and-collect is not available",
+        "Explanation of warehouse limitation",
+        "Alternative shipping options (standard/express)"
+      ],
+      "mustAvoid": [
+        "Making exceptions for Sydney customers",
+        "Being apologetic about the operational reality",
+        "Leaving door open for 'special arrangement'"
+      ],
+      "scenario_tags": ["click_and_collect", "pickup", "sydney_warehouse", "not_available"],
+      "applicability": {
+        "urgency_range": "Low (2-4)",
+        "risk_levels": "Low (operational constraint, not service failure)",
+        "context_signals": ["local_pickup_requested", "sydney_customer", "save_shipping"]
+      },
+      "retrieval_metadata": {
+        "summary": "Explains that click-and-collect is not available due to warehouse operational constraints.",
+        "keywords": ["click and collect", "pickup", "Sydney warehouse", "not available", "shipping only"],
+        "confidence_signals": "Use when customer (especially Sydney-based) asks if they can pick up their order."
+      }
+    },
+    {
+      "id": "template_operational_back_in_stock_waitlist",
+      "title": "Back in Stock / Waitlist",
+      "category": "stock_availability",
+      "action_type": "provide_information",
+      "body_template": "Hi [Customer Name],\n\nThank you for your interest in [Box Name].\n\nI'm pleased to let you know that [Box Name] is back in stock and available for purchase on our website now.\n\nGiven that you've been waiting for this item, I'd recommend placing your order soon to secure it, as stock is moving quickly.\n\nIf you have any questions about the product or your order, please don't hesitate to ask.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Helpful and encouraging, not pressuring but creating gentle urgency",
+      "mustInclude": [
+        "Confirmation that item is back in stock",
+        "Direction to website to purchase",
+        "Gentle encouragement to act quickly",
+        "Offer of further assistance"
+      ],
+      "mustAvoid": [
+        "Promising to hold stock",
+        "Over-pressuring with scarcity tactics",
+        "Being vague about availability"
+      ],
+      "scenario_tags": ["back_in_stock", "waitlist", "notification", "available_now"],
+      "applicability": {
+        "urgency_range": "Low (2-4)",
+        "risk_levels": "Low (product is available, not crisis)",
+        "context_signals": ["waitlist_customer", "stock_alert", "previously_out_of_stock"]
+      },
+      "retrieval_metadata": {
+        "summary": "Notifies waitlist customers that previously out-of-stock items are now available.",
+        "keywords": ["back in stock", "waitlist", "available now", "purchase soon", "moving quickly"],
+        "confidence_signals": "Use when notifying customers that items they were waiting for are back in stock."
+      }
+    },
+    {
+      "id": "template_operational_preorder_stock_timing",
+      "title": "Preorder Stock Timing Updates",
+      "category": "stock_availability",
+      "action_type": "provide_information",
+      "body_template": "Hi [Customer Name],\n\nThank you for checking in on your preorder.\n\nI'm writing to update you on the timeline for [Box Name]. We're currently expecting this to ship by [revised date], though please understand this is an estimate and may shift slightly as production completes.\n\nI completely understand that waiting is frustrating, and I appreciate your patience. If this revised timeline doesn't work for you, please let me know and I can discuss options.\n\nI'll email you again as soon as your order is dispatched.\n\nWarm regards,\nHeidi x",
+      "tone_notes": "Transparent and empathetic, not defensive about delays",
+      "mustInclude": [
+        "Updated shipping timeline",
+        "Acknowledgement that this is an estimate",
+        "Empathy for the frustration of waiting",
+        "Option to cancel if timeline doesn't work",
+        "Commitment to email on dispatch"
+      ],
+      "mustAvoid": [
+        "Making promises about firm dates",
+        "Being defensive about production delays",
+        "Ignoring the customer's waiting frustration"
+      ],
+      "scenario_tags": ["preorder", "delay", "timeline_update", "stock_timing"],
+      "applicability": {
+        "urgency_range": "Medium (5-7)",
+        "risk_levels": "Medium (customer may cancel if wait is too long)",
+        "context_signals": ["preorder_customer", "delay_notification", "timeline_inquiry"]
+      },
+      "retrieval_metadata": {
+        "summary": "Provides preorder timeline updates with cancellation options if delays are excessive.",
+        "keywords": ["preorder", "delay", "shipping date", "timeline", "waiting", "cancel option"],
+        "confidence_signals": "Use when proactively updating preorder customers about delays or responding to timeline inquiries."
+      }
+    }
+  ],
+
+  "policy_rules": [
+    {
+      "rule_name": "Damaged/Faulty Items - Free Replacement",
+      "description": "All damaged or faulty items are replaced free of charge. Photo evidence required before replacement ships. No return shipping required for damaged items.",
+      "when_to_apply": "When customer reports damage, fault, or missing components from delivery.",
+      "constraints": "Must receive photo evidence before shipping replacement. Customer keeps damaged item.",
+      "action_type": "arrange_replacement",
+      "examples": [
+        "Please provide a photo of the damage, and we'll arrange a replacement to be shipped within 2 business days.",
+        "You don't need to return the original item."
+      ],
+      "retrieval_metadata": {
+        "keywords": ["damaged", "faulty", "replacement", "free", "photo evidence", "no return"],
+        "confidence_signals": "Use when customer reports any product damage, fault, or delivery issue."
+      }
+    },
+    {
+      "rule_name": "No Sydney Click-and-Collect",
+      "description": "The Sydney warehouse is not equipped for public pickups. All orders must be shipped.",
+      "when_to_apply": "When a customer asks to pick up an order locally in Sydney to save time or shipping costs.",
+      "constraints": "Strict rule. No exceptions mentioned.",
+      "action_type": "decline_request",
+      "examples": [
+        "We don't currently offer a click-and-collect option, as our Sydney warehouse isn't set up for customer pickups."
+      ],
+      "retrieval_metadata": {
+        "keywords": ["click and collect", "pickup", "Sydney warehouse", "not available", "shipping only"],
+        "confidence_signals": "Use when any customer (especially Sydney-based) asks about local pickup."
+      }
+    },
+    {
+      "rule_name": "No Return for Damaged Paper Boxes",
+      "description": "If Sagitine paper-based boxes arrive substantially damaged, do not require the customer to ship them back.",
+      "when_to_apply": "When replacing or refunding damaged insert boxes.",
+      "constraints": "Applies to hand-wrapped paper boxes, not necessarily stands/hardware frames.",
+      "action_type": "arrange_replacement",
+      "examples": [
+        "There is no need to return the damaged Boxes. If you're able to find another use for them, that would be lovely, and if not, please feel free to recycle them."
+      ],
+      "retrieval_metadata": {
+        "keywords": ["no return", "damaged boxes", "recycle", "repurpose", "paper-based", "keep damaged"],
+        "confidence_signals": "Use when paper-based Boxes arrive damaged and customer asks about returning them."
+      }
+    },
+    {
+      "rule_name": "Refund Timelines",
+      "description": "Refunds take approximately 3 business days, but explicitly warn that some banks take up to 10.",
+      "when_to_apply": "Whenever processing a refund.",
+      "constraints": "Always mention the extended bank timeline to manage finality and expectations.",
+      "action_type": "process_refund",
+      "examples": [
+        "It typically takes around 3 business days to appear, although some banks can take up to 10."
+      ],
+      "retrieval_metadata": {
+        "keywords": ["refund", "timeline", "3 business days", "10 days", "bank processing", "payment method"],
+        "confidence_signals": "Use whenever explaining when a refund will appear in customer's account."
+      }
+    },
+    {
+      "rule_name": "Component Separation",
+      "description": "Sagitine products are sold as complete systems. Components are not generally sold separately.",
+      "when_to_apply": "When a customer asks to purchase a single box for a stand, or a stand without boxes.",
+      "constraints": "Occasional exceptions exist for 'Stand-only' purchases if customer value makes sense, but the default brand stance is 'complete systems'.",
+      "action_type": "decline_request",
+      "examples": [
+        "At the moment, we don't have plans to offer that piece separately. Our pieces are designed as complete systems."
+      ],
+      "retrieval_metadata": {
+        "keywords": ["component", "separate sale", "boxes only", "stand only", "complete system", "designed together"],
+        "confidence_signals": "Use when customer asks to purchase individual components separately from complete systems."
+      }
+    },
+    {
+      "rule_name": "Large Item Returns Condition",
+      "description": "Return collections for stands require knowing if the unit is disassembled and if it is in original packaging.",
+      "when_to_apply": "When organizing a courier pickup for a returned stand.",
+      "constraints": "Must verify state before booking the pickup courier.",
+      "action_type": "request_info",
+      "examples": [
+        "I'll just need to confirm whether the Stand is disassembled and whether you still have the original packaging, as that will determine the most suitable pickup method."
+      ],
+      "retrieval_metadata": {
+        "keywords": ["large item", "stand return", "pickup", "disassembled", "original packaging", "courier"],
+        "confidence_signals": "Use when customer wants to return a Stand or other large item requiring courier pickup."
+      }
+    },
+    {
+      "rule_name": "Lost in Transit - Courier Investigation",
+      "description": "When tracking shows no movement beyond expected delivery window, initiate courier investigation before offering replacement.",
+      "when_to_apply": "When tracking hasn't updated for more than 3 days beyond expected delivery date.",
+      "constraints": "Must allow 24-48 hours for courier investigation before determining next steps.",
+      "action_type": "request_info",
+      "examples": [
+        "Let me investigate this with the courier for you straight away. I'll follow up with them and get back to you within 24 hours with an update."
+      ],
+      "retrieval_metadata": {
+        "keywords": ["lost in transit", "tracking stalled", "courier investigation", "no movement", "beyond expected window"],
+        "confidence_signals": "Use when tracking shows no movement for 3+ days beyond expected delivery."
+      }
+    },
+    {
+      "rule_name": "Marked Delivered But Not Received",
+      "description": "When tracking shows 'Delivered' but customer claims they did not receive, guide customer to check nearby locations before initiating investigation.",
+      "when_to_apply": "When customer claims non-receipt despite tracking showing delivered status.",
+      "constraints": "Must first ask customer to check safe spots, neighbours, collection points. Only escalate to investigation if not found.",
+      "action_type": "request_info",
+      "examples": [
+        "Could you please check if it might have been left in a safe spot, with a neighbour, or at a nearby collection point?"
+      ],
+      "retrieval_metadata": {
+        "keywords": ["marked delivered", "not received", "safe spot", "neighbour", "collection point", "investigation"],
+        "confidence_signals": "Use when tracking shows 'Delivered' but customer claims they did not receive package."
+      }
+    },
+    {
+      "rule_name": "Stolen After Delivery - Courier Claim",
+      "description": "When customer confirms package was stolen after delivery, raise courier claim and provide police report support.",
+      "when_to_apply": "When customer has evidence package was stolen (security footage, witnessed theft).",
+      "constraints": "Do not admit liability. Courier claim and police report required for insurance. Resolution depends on courier investigation outcome.",
+      "action_type": "escalate",
+      "examples": [
+        "Let me raise a claim with the courier and also provide you with a police report number that may help with any insurance claim you wish to make."
+      ],
+      "retrieval_metadata": {
+        "keywords": ["stolen", "theft", "courier claim", "police report", "insurance", "security footage"],
+        "confidence_signals": "Use when customer confirms package was stolen from their property after delivery."
+      }
+    },
+    {
+      "rule_name": "Wrong Address - Cannot Redirect in Transit",
+      "description": "Once an order has been dispatched, it cannot be redirected to a different address. Customer must wait for return as undeliverable.",
+      "when_to_apply": "When customer realises they entered wrong address and order has already been dispatched.",
+      "constraints": "If order hasn't shipped yet, address can be updated. Once shipped, no redirection possible.",
+      "action_type": "provide_information",
+      "examples": [
+        "Unfortunately, once an order has been dispatched, I'm not able to redirect it in transit. If the package is returned to us as undeliverable, I'll be in touch to arrange reshipment."
+      ],
+      "retrieval_metadata": {
+        "keywords": ["wrong address", "customer entered", "redirect", "undeliverable", "returned to sender", "cannot change"],
+        "confidence_signals": "Use when customer realises they entered wrong address and order has already been dispatched."
+      }
+    },
+    {
+      "rule_name": "Retrospective Discounts Not Applied",
+      "description": "Promotional codes cannot be applied retrospectively to orders that have already been placed.",
+      "when_to_apply": "When customer asks to apply a discount code that just expired to their recent order.",
+      "constraints": "No exceptions. This would set precedent and create operational complexity.",
+      "action_type": "decline_request",
+      "examples": [
+        "Unfortunately, I'm not able to apply discount codes retrospectively to orders that have already been placed."
+      ],
+      "retrieval_metadata": {
+        "keywords": ["retrospective discount", "missed sale", "just missed", "promotion ended", "cannot apply"],
+        "confidence_signals": "Use when customer asks to apply a recently-expired discount to their order."
+      }
+    },
+    {
+      "rule_name": "Free Shipping Threshold - Firm",
+      "description": "Free shipping is only available for orders meeting the minimum spend threshold. Cannot be applied to orders below threshold.",
+      "when_to_apply": "When customer asks for free shipping on orders below the threshold amount.",
+      "constraints": "No exceptions. Free shipping is a promotional tool, not a negotiable service.",
+      "action_type": "decline_request",
+      "examples": [
+        "Our free shipping threshold is [amount], and I'm not able to adjust the shipping cost for orders below that amount."
+      ],
+      "retrieval_metadata": {
+        "keywords": ["free shipping", "below threshold", "shipping cost", "cannot adjust", "firm policy"],
+        "confidence_signals": "Use when customer asks for free shipping on order below minimum spend."
+      }
+    },
+    {
+      "rule_name": "Preorder Timeline Estimates Only",
+      "description": "Preorder shipping dates are estimates, not guarantees. Delays may occur due to production realities.",
+      "when_to_apply": "When proactively updating preorder customers about delays or responding to timeline inquiries.",
+      "constraints": "Must be transparent about potential delays. Offer cancellation option if timeline is unacceptable.",
+      "action_type": "provide_information",
+      "examples": [
+        "We're currently expecting this to ship by [revised date], though please understand this is an estimate and may shift slightly as production completes."
+      ],
+      "retrieval_metadata": {
+        "keywords": ["preorder", "delay", "shipping date", "timeline", "estimate only", "cancel option"],
+        "confidence_signals": "Use when managing preorder expectations about shipping timelines."
+      }
+    },
+    {
+      "rule_name": "Warranty Term - Structural Integrity",
+      "description": "Sagitine products are warranted against structural defects. Does not cover normal wear, user modification, or damage from misuse.",
+      "when_to_apply": "When determining if a free replacement is warranted outside standard return window.",
+      "constraints": "Warranty covers manufacturing defects, not user damage or modifications. Assessment required for each case.",
+      "action_type": "request_info",
+      "examples": [
+        "Could you please provide a photo of the issue? I'll need to assess whether this is covered under our warranty."
+      ],
+      "retrieval_metadata": {
+        "keywords": ["warranty", "structural defect", "manufacturing", "normal wear", "user modification", "assessment"],
+        "confidence_signals": "Use when customer requests replacement outside standard return window and warranty status is unclear."
+      }
+    }
+  ],
+
+  "product_knowledge": [
+    {
+      "topic": "Storage Boxes vs. Drawers - Design Philosophy",
+      "snippet": "Sagitine Boxes are designed as modular storage boxes that sit within a frame, rather than sliding drawers on runners. They are intended to be completely removed using two hands for organization and arranging. This design choice provides flexibility to reorganise storage over time and protect pieces by keeping them enclosed when not in use.",
+      "correct_wording_patterns": ["storage boxes", "sit within the frame", "two hands", "considered interaction", "removed completely", "reorganise", "flexibility"],
+      "prohibited_wording": ["drawers", "runners", "sliding mechanisms", "stuck"],
+      "retrieval_metadata": {
+        "keywords": ["boxes vs drawers", "design philosophy", "removable", "not drawers", "two hands", "flexibility"],
+        "confidence_signals": "Use when explaining why Sagitine products don't function like traditional drawers."
+      }
+    },
+    {
+      "topic": "Adhesion and Modifications - Paper Construction",
+      "snippet": "The boxes are built from a premium paper-based, hand-wrapped construction. They should never be glued, adhered, taped, or otherwise modified, as this causes significant structural and visual damage. Any form of adhesion compromises the paper surface and cannot be undone.",
+      "correct_wording_patterns": ["paper-based", "hand-wrapped construction", "damage quite significantly", "no adhesive", "no modifications"],
+      "prohibited_wording": ["glue them", "stick them down", "tape them", "wax", "runners", "modify"],
+      "retrieval_metadata": {
+        "keywords": ["adhesion", "glue", "tape", "modify", "paper-based", "construction", "damage"],
+        "confidence_signals": "Use when customer asks about gluing boxes or making modifications to improve fit."
+      }
+    },
+    {
+      "topic": "Product Assembly - Minimal Tools Required",
+      "snippet": "Assembly of a Sagitine Stand is minimal and straightforward, requiring only an Allen key (included) and a screwdriver. Instructions are provided by email before delivery and physically in the box. Assembly time is typically 5-10 minutes. Can be assembled by one person. Sturdy construction once assembled.",
+      "correct_wording_patterns": ["simple setup", "Allen key and a screwdriver", "instruction guides", "5-10 minutes", "one person"],
+      "prohibited_wording": ["complex assembly", "hire a handyman", "power tools", "difficult", "professional installation"],
+      "retrieval_metadata": {
+        "keywords": ["assembly", "Allen key", "screwdriver", "5-10 minutes", "instructions", "setup", "minimal tools"],
+        "confidence_signals": "Use when customer asks about assembly difficulty or missing instructions."
+      }
+    },
+    {
+      "topic": "Box Care - Premium Materials",
+      "snippet": "Sagitine Boxes are finished with premium materials. Care guidelines: Wipe clean with dry, soft cloth. Avoid harsh chemicals or abrasives. Not suitable for dishwasher cleaning. For timber products, use food-safe timber oil quarterly to maintain finish. Maintain in dry environment away from direct heat sources. Not waterproof - avoid liquid cleaners.",
+      "correct_wording_patterns": ["dry soft cloth", "food-safe timber oil", "dry environment", "premium materials", "quarterly"],
+      "prohibited_wording": ["dishwasher", "harsh chemicals", "wet cloth", "water", "liquid cleaners", "abrasives"],
+      "retrieval_metadata": {
+        "keywords": ["care", "cleaning", "maintenance", "timber oil", "not waterproof", "premium materials"],
+        "confidence_signals": "Use when customer asks how to clean or care for their Sagitine products."
+      }
+    },
+    {
+      "topic": "Inserts - Box-Dependent Design",
+      "snippet": "Inserts are designed exclusively to sit within a relevant Sagitine Box format to organize specific wardrobe and lifestyle items. They are not intended or designed to be utilized as standalone pieces. Inserts require the Box structure to function properly.",
+      "correct_wording_patterns": ["sit within the relevant Sagitine Box", "organise specific items", "not standalone", "require Box structure"],
+      "prohibited_wording": ["standalone", "use them anywhere", "independent of boxes"],
+      "retrieval_metadata": {
+        "keywords": ["inserts", "box dependent", "not standalone", "organisation", "wardrobe", "lifestyle items"],
+        "confidence_signals": "Use when customer asks if inserts can be used separately from Boxes."
+      }
+    },
+    {
+      "topic": "Tight Fit - Intentional Precision",
+      "snippet": "Sagitine Boxes are designed with a precise fit within the Stand frame. This intentional tightness prevents Boxes from shifting during use, maintains clean aesthetic, and ensures secure fit. When new, fit can feel particularly snug but typically relaxes slightly with regular use as Boxes settle. Using two hands (one to stabilise Stand, one to lift Box) makes interaction smoother.",
+      "correct_wording_patterns": ["precise fit", "intentional tightness", "settles with use", "two hands", "prevent shifting", "secure"],
+      "prohibited_wording": ["defective", "too tight", "broken", "wrong size", "manufacturing error"],
+      "retrieval_metadata": {
+        "keywords": ["tight fit", "stiff", "hard to open", "precise", "settles", "two hands"],
+        "confidence_signals": "Use when customer complains that Boxes are too tight or difficult to remove."
+      }
+    },
+    {
+      "topic": "Dust Protection and Airflow Balance",
+      "snippet": "Sagitine Boxes are designed as enclosed storage boxes rather than open drawers, providing excellent dust protection. The minimal gap between Box and frame is intentional for: air circulation to prevent moisture buildup, easy removal without friction, and flexibility to remove Boxes completely. For long-term storage, garment bags within Boxes provide extra protection layer.",
+      "correct_wording_patterns": ["enclosed storage", "dust protection", "air circulation", "minimal gap", "garment bags", "long-term storage"],
+      "prohibited_wording": ["completely sealed", "airtight", "no gap", "dustproof", "hermetic"],
+      "retrieval_metadata": {
+        "keywords": ["dust", "airflow", "gap", "enclosed", "protection", "long-term storage", "garment bags"],
+        "confidence_signals": "Use when customer asks about dust protection or notices the gap between Box and frame."
+      }
+    },
+    {
+      "topic": "Paper-Based Construction Characteristics",
+      "snippet": "Sagitine Boxes use premium paper-based, hand-wrapped construction for distinctive aesthetic and lightweight feel. This requires specific care: avoid water or liquid cleaners (wipe with dry soft cloth only), no adhesive/tape/glue (damages paper surface), keep away from direct heat or high humidity. Timber components need food-safe timber oil quarterly. This premium construction is part of Sagitine's character - with proper care, pieces will last for years.",
+      "correct_wording_patterns": ["paper-based", "hand-wrapped", "premium construction", "dry cloth", "timber oil", "proper care"],
+      "prohibited_wording": ["waterproof", "liquid cleaners", "glue", "tape", "adhesive", "high humidity", "direct heat"],
+      "retrieval_metadata": {
+        "keywords": ["paper-based", "hand-wrapped", "construction", "care", "cleaning", "materials", "premium"],
+        "confidence_signals": "Use when explaining product construction, care requirements, or why modifications are not recommended."
+      }
+    }
+  ],
+
+  "brand_constraints": {
+    "sagitine_tov": {
+      "core_tone": {
+        "calm": "Composed and measured, never reactive or defensive",
+        "warm": "Friendly and personal without being gushy or familiar",
+        "polished": "Elevated language without being corporate or sterile",
+        "helpful": "Solution-focused and actionable",
+        "quietly_premium": "Understated confidence, not loud or salesy",
+        "clear": "Direct communication without ambiguity",
+        "never_gushy": "No exclamation abuse, no over-enthusiasm",
+        "never_corporate": "No jargon, no legalese, no 'team' deflections"
+      },
+      "preferred_phrasing": [
+        "Thank you for reaching out",
+        "Thank you for letting me know",
+        "Thank you for your message",
+        "I can arrange",
+        "I can organise",
+        "Just let me know what works best",
+        "Warm regards, Heidi x"
+      ],
+      "prohibited_phrasing": [
+        "I'm sorry",
+        "We apologise",
+        "I apologize",
+        "So sorry",
+        "Sorry for any inconvenience",
+        "Unfortunately",
+        "No worries",
+        "Awesome",
+        "Super",
+        "Hey",
+        "Cheers",
+        "No problem",
+        "To be honest",
+        "Basically",
+        "Long story short",
+        "I promise",
+        "Guaranteed",
+        "100%",
+        "Always"
+      ],
+      "terminology": {
+        "prefer": ["Box", "Boxes", "Stand", "Stands", "piece", "pieces"],
+        "avoid": ["drawer", "drawers", "unit", "units", "item", "product", "system"]
+      },
+      "structure": {
+        "short_paragraphs": "Keep paragraphs concise (2-3 sentences max)",
+        "direct_next_step": "Always include clear next action or question",
+        "ownership_language": "Use 'I' not 'we' - take personal ownership",
+        "concise_explanation": "Provide just enough context, not over-explanation",
+        "elegant_sign_off": "Always end with 'Warm regards, Heidi x'"
+      }
+    },
+    "operational_constraints": {
+      "no_apology_drift": "Never say 'I'm sorry' - replace with 'Thank you for letting me know' or 'Thank you for bringing this to my attention'",
+      "no_deflection": "Don't say 'we' or 'the team' - use 'I' and take ownership",
+      "no_over_promise": "Never promise timelines or outcomes you can't guarantee",
+      "no_policy_invention": "Don't invent policies or goodwill - stay within documented rules",
+      "no_modified_product": "Never suggest home modifications (wax, runners, glue) to address product characteristics"
+    },
+    "risk_escalation": {
+      "high_risk_triggers": ["legal threat", "chargeback mention", "regulatory complaint", "social media threat"],
+      "high_risk_action": "Immediate escalation to management, no direct customer response",
+      "medium_risk_triggers": ["multiple contacts", "angry language", "demanding tone"],
+      "medium_risk_action": "Senior review before response, de-escalation focus",
+      "low_risk_triggers": ["standard inquiry", "first contact", "reasonable tone"],
+      "low_risk_action": "Standard response with appropriate template"
+    }
+  },
+
+  "scenario_tags": [
+    {
+      "tag": "damaged_transit",
+      "description": "Item was damaged during the shipping/courier process.",
+      "category": "damaged_missing_faulty",
+      "urgency": "High (8-10)",
+      "risk_level": "Medium",
+      "action_type": "arrange_replacement"
+    },
+    {
+      "tag": "hardware_missing",
+      "description": "Order is missing assembly hardware or key structural pieces.",
+      "category": "damaged_missing_faulty",
+      "urgency": "High (8-10)",
+      "risk_level": "Medium (product cannot be assembled)",
+      "action_type": "request_info"
+    },
+    {
+      "tag": "product_education",
+      "description": "Customer misunderstands how the product is originally intended to function.",
+      "category": "product_usage_guidance",
+      "urgency": "Low (2-4)",
+      "risk_level": "Low",
+      "action_type": "provide_information"
+    },
+    {
+      "tag": "local_sydney_assembly",
+      "description": "Customer is based in Sydney and qualifies for/requests local assembled vehicle delivery options.",
+      "category": "shipping_delivery_order_issue",
+      "urgency": "Medium (5-7)",
+      "risk_level": "Low",
+      "action_type": "decline_request"
+    },
+    {
+      "tag": "refund_over_replace",
+      "description": "Customer prefers a money back refund rather than waiting for a replacement part.",
+      "category": "return_refund_exchange",
+      "urgency": "Medium (5-7)",
+      "risk_level": "Low (customer is agreed to terms)",
+      "action_type": "process_refund"
+    },
+    {
+      "tag": "partnership_decline",
+      "description": "Polite rejection of an influencer, press, or wholesale inquiry.",
+      "category": "partnership_wholesale_press",
+      "urgency": "Low (2-4)",
+      "risk_level": "Low",
+      "action_type": "route_to_team"
+    },
+    {
+      "tag": "lost_in_transit",
+      "description": "Tracking shows no movement beyond expected delivery window.",
+      "category": "shipping_delivery_order_issue",
+      "urgency": "High (8-9)",
+      "risk_level": "Medium (package may still be found)",
+      "action_type": "request_info"
+    },
+    {
+      "tag": "marked_delivered_not_received",
+      "description": "Tracking shows 'Delivered' but customer claims they did not receive package.",
+      "category": "shipping_delivery_order_issue",
+      "urgency": "High (8-9)",
+      "risk_level": "Medium (may be found nearby)",
+      "action_type": "request_info"
+    },
+    {
+      "tag": "stolen_after_delivery",
+      "description": "Customer confirms package was stolen from their property after delivery.",
+      "category": "shipping_delivery_order_issue",
+      "urgency": "High (9-10)",
+      "risk_level": "High (potential loss, legal considerations)",
+      "action_type": "escalate"
+    },
+    {
+      "tag": "wrong_address_customer",
+      "description": "Customer entered wrong address at checkout and order has been dispatched.",
+      "category": "shipping_delivery_order_issue",
+      "urgency": "Medium (5-7)",
+      "risk_level": "Low (customer's error, not brand's)",
+      "action_type": "provide_information"
+    },
+    {
+      "tag": "courier_delay",
+      "description": "Package is in transit but moving more slowly than expected.",
+      "category": "shipping_delivery_order_issue",
+      "urgency": "Medium (6-7)",
+      "risk_level": "Low (delay is temporary)",
+      "action_type": "provide_information"
+    },
+    {
+      "tag": "partial_delivery",
+      "description": "Customer received only part of their order (multiple cartons shipped).",
+      "category": "shipping_delivery_order_issue",
+      "urgency": "Medium (5-7)",
+      "risk_level": "Low (other carton still in transit)",
+      "action_type": "provide_information"
+    },
+    {
+      "tag": "missed_sale_retrospective",
+      "description": "Customer asks to apply recently-ended promotion to their order.",
+      "category": "account_billing_payment",
+      "urgency": "Low (2-4)",
+      "risk_level": "Low (request, not demand)",
+      "action_type": "decline_request"
+    },
+    {
+      "tag": "discount_code_failed",
+      "description": "Discount code did not work at checkout.",
+      "category": "account_billing_payment",
+      "urgency": "Medium (5-7)",
+      "risk_level": "Medium (customer may abandon cart)",
+      "action_type": "provide_information"
+    },
+    {
+      "tag": "free_shipping_below_threshold",
+      "description": "Customer asks for free shipping on order below minimum spend.",
+      "category": "account_billing_payment",
+      "urgency": "Low (2-4)",
+      "risk_level": "Low (request, not demand)",
+      "action_type": "decline_request"
+    },
+    {
+      "tag": "component_separation_request",
+      "description": "Customer wants to buy individual Boxes or Stands separately.",
+      "category": "stock_availability",
+      "urgency": "Low (2-4)",
+      "risk_level": "Low (product philosophy question)",
+      "action_type": "decline_request"
+    },
+    {
+      "tag": "frustrated_escalated",
+      "description": "Customer language indicates frustration, anger, or escalation.",
+      "category": "brand_feedback_general",
+      "urgency": "High (9-10)",
+      "risk_level": "High (risk of negative review or further escalation)",
+      "action_type": "acknowledge_feedback"
+    },
+    {
+      "tag": "disappointed_expectations",
+      "description": "Product doesn't meet customer expectations.",
+      "category": "brand_feedback_general",
+      "urgency": "Medium (5-7)",
+      "risk_level": "Medium (may indicate product-market fit issue)",
+      "action_type": "acknowledge_feedback"
+    },
+    {
+      "tag": "tight_fit_concern",
+      "description": "Customer complains Boxes are too tight or difficult to remove.",
+      "category": "product_usage_guidance",
+      "urgency": "Low (2-4)",
+      "risk_level": "Low (characteristic, not defect)",
+      "action_type": "provide_information"
+    },
+    {
+      "tag": "dust_protection_question",
+      "description": "Customer asks about dust protection or notices gap between Box and frame.",
+      "category": "product_usage_guidance",
+      "urgency": "Low (2-4)",
+      "risk_level": "Low (pre-purchase or usage question)",
+      "action_type": "provide_information"
+    },
+    {
+      "tag": "missing_instructions",
+      "description": "Assembly instructions were not in the package.",
+      "category": "product_usage_guidance",
+      "urgency": "High (8-9)",
+      "risk_level": "Medium (customer cannot assemble without instructions)",
+      "action_type": "provide_information"
+    },
+    {
+      "tag": "replacement_parts_request",
+      "description": "Customer needs replacement parts but doesn't specify what.",
+      "category": "damaged_missing_faulty",
+      "urgency": "Medium (5-7)",
+      "risk_level": "Low (replacement request, not emergency)",
+      "action_type": "request_info"
+    },
+    {
+      "tag": "large_item_return",
+      "description": "Customer wants to return a Stand requiring courier pickup.",
+      "category": "return_refund_exchange",
+      "urgency": "Medium (5-7)",
+      "risk_level": "Low (return in progress, not emergency)",
+      "action_type": "request_info"
+    },
+    {
+      "tag": "click_and_collect_request",
+      "description": "Customer asks if they can pick up order locally (especially Sydney).",
+      "category": "shipping_delivery_order_issue",
+      "urgency": "Low (2-4)",
+      "risk_level": "Low (operational constraint, not service failure)",
+      "action_type": "decline_request"
+    },
+    {
+      "tag": "back_in_stock_notification",
+      "description": "Notifying waitlist customers that out-of-stock items are now available.",
+      "category": "stock_availability",
+      "urgency": "Low (2-4)",
+      "risk_level": "Low (product is available, not crisis)",
+      "action_type": "provide_information"
+    },
+    {
+      "tag": "preorder_delay",
+      "description": "Preorder shipping timeline has extended or customer is asking about timing.",
+      "category": "stock_availability",
+      "urgency": "Medium (5-7)",
+      "riskency": "Medium (customer may cancel if wait is too long)",
+      "action_type": "provide_information"
+    }
+  ],
+
+  "gaps_remaining": [
+    {
+      "area": "International Shipping & Customs",
+      "description": "No documented clear policy for handling duties, taxes, or international shipping delays. Critical for any future cross-border expansion.",
+      "priority": "Medium",
+      "blocker": "Not a blocker for domestic go-live, but should be documented before international expansion."
+    },
+    {
+      "area": "Exact Warranty Duration",
+      "description": "Warranty term (e.g., 1 year, 2 years) is not explicitly called out in templates. Makes it vague when deciding if free replacement is warranted outside standard return window.",
+      "priority": "High",
+      "blocker": "Partial blocker - warranty rule exists but lacks specific timeframe. Recommend documenting 12-month structural warranty."
+    },
+    {
+      "area": "Goodwill Decision Framework",
+      "description": "No clear guidance on when to offer goodwill vs when not to. Current approach is to decline most requests, which may miss opportunities to build loyalty in edge cases.",
+      "priority": "Medium",
+      "blocker": "Not a blocker for go-live, but goodwill framework should be developed for customer retention strategy."
+    },
+    {
+      "area": "High-Value Customer Recognition",
+      "description": "No special handling or recognition for repeat customers or high LTV customers. All customers treated the same regardless of lifetime value.",
+      "priority": "Low",
+      "blocker": "Not a blocker - enhancement opportunity for future CX personalisation."
+    },
+    {
+      "area": "Social Media Escalation",
+      "description": "No specific templates or protocols for when customer issues surface via social media channels (Instagram, TikTok) rather than email.",
+      "priority": "Medium",
+      "blocker": "Not a blocker for email-first go-live, but should be documented before social media CX integration."
+    }
+  ]
+}

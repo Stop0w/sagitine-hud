@@ -1,11 +1,8 @@
 // Minimal test endpoint
-export default async function handler(req: Request) {
-  return new Response(JSON.stringify({
+export default async function handler(req, res) {
+  return res.status(200).json({
     test: 'working',
     timestamp: new Date().toISOString(),
-    path: new URL(req.url).pathname,
-  }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
+    path: req.url,
   });
 }

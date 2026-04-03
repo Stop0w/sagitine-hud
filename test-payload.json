@@ -1,0 +1,9 @@
+{
+  "from_email": "sarah.johnson@example.com",
+  "from_name": "Sarah Johnson",
+  "subject": "Re: Order #438325301 - Damaged box received",
+  "body_plain": "Hi Heidi,\n\nI just received my Florence 8-Box Stand in Black today and unfortunately one of the boxes arrived with a dent in the side. The box still works but it's quite noticeable.\n\nI've attached a photo showing the damage. Could you please let me know how to get a replacement?\n\nThank you,\nSarah",
+  "timestamp": "2026-03-31T10:30:00Z",
+  "message_id": "<AM0PR02MB123456789012345678901234@MSGID>",
+  "thread_id": "<AM0PR02MB123456789012345678901234@MSGID>"
+}

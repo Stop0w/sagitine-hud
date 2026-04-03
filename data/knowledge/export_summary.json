@@ -1,0 +1,52 @@
+{
+  "generated_at": "2026-03-31T16:40:12.144763",
+  "method": "synthesis_from_patterns",
+  "gold_responses": {
+    "total": 7,
+    "by_category": {
+      "shipping_delivery_order_issue": {
+        "title": "Shipping/Delivery Response Template",
+        "sample_count": 306,
+        "synthesized": true
+      },
+      "damaged_missing_faulty": {
+        "title": "Damaged/Missing/Faulty Response Template",
+        "sample_count": 58,
+        "synthesized": true
+      },
+      "stock_availability": {
+        "title": "Stock Availability Response Template",
+        "sample_count": 66,
+        "synthesized": true
+      },
+      "brand_feedback_general": {
+        "title": "Brand Feedback/General Response Template",
+        "sample_count": 181,
+        "synthesized": true
+      },
+      "partnership_wholesale_press": {
+        "title": "Partnership/Wholesale/Press Response Template",
+        "sample_count": 23,
+        "synthesized": true
+      },
+      "return_refund_exchange": {
+        "title": "Return/Refund/Exchange Response Template",
+        "sample_count": 34,
+        "synthesized": true
+      },
+      "product_usage_guidance": {
+        "title": "Product Usage Response Template",
+        "sample_count": 103,
+        "synthesized": true
+      }
+    }
+  },
+  "knowledge_snippets": {
+    "total": 8,
+    "by_type": {
+      "policy": 4,
+      "fact": 3,
+      "guidance": 1
+    }
+  }
+}

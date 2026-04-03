@@ -51,10 +51,12 @@ export const NotificationPill = forwardRef<HTMLButtonElement, NotificationPillPr
         </div>
 
         {/* Trigger Icon */}
-        <div className="ml-2 flex items-center justify-center bg-primary rounded-full p-1.5 group-hover:bg-primary-container transition-colors">
-          <span className="material-symbols-outlined text-white !text-[14px]" data-icon="terminal">
-            terminal
-          </span>
+        <div className="ml-2 flex items-center justify-center overflow-visible drop-shadow-sm hover:drop-shadow-md transition-all">
+          <img 
+            src="/Sagitine-Treasure-Chest.png" 
+            alt="Sagitine Treasure Chest" 
+            className="w-[34px] h-[34px] object-contain hover:scale-105 transition-transform"
+          />
         </div>
       </button>
     );

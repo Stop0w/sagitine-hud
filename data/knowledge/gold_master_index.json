@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "categories": {
+    "damaged_missing_faulty": {
+      "urgency": "high",
+      "template_id": "damaged_missing_faulty_template"
+    },
+    "shipping_delivery_order_issue": {
+      "urgency": "high",
+      "template_id": "shipping_delivery_order_issue_template"
+    },
+    "product_usage_guidance": {
+      "urgency": "medium",
+      "template_id": "product_usage_guidance_template"
+    },
+    "pre_purchase_question": {
+      "urgency": "medium",
+      "template_id": "pre_purchase_question_template"
+    },
+    "return_refund_exchange": {
+      "urgency": "high",
+      "template_id": "return_refund_exchange_template"
+    },
+    "stock_availability": {
+      "urgency": "low",
+      "template_id": "stock_availability_template"
+    },
+    "partnership_wholesale_press": {
+      "urgency": "low",
+      "template_id": "partnership_wholesale_press_template"
+    },
+    "brand_feedback_general": {
+      "urgency": "low",
+      "template_id": "brand_feedback_general_template"
+    },
+    "order_modification_cancellation": {
+      "urgency": "high",
+      "template_id": "order_modification_cancellation_template"
+    },
+    "account_billing_payment": {
+      "urgency": "high",
+      "template_id": null
+    },
+    "praise_testimonial_ugc": {
+      "urgency": "low",
+      "template_id": "brand_feedback_general_template"
+    },
+    "spam_solicitation": {
+      "urgency": "none",
+      "template_id": null
+    },
+    "other_uncategorized": {
+      "urgency": "medium",
+      "template_id": null
+    }
+  }
+}
