@@ -1,7 +1,7 @@
 // Hub Dashboard API - Combined metrics + categories for single-poll optimisation
 import { db } from '../src/db';
 import { tickets, inboundEmails, triageResults } from '../src/db/schema';
-import { eq, desc, and, gte, sql, ne } from 'drizzle-orm';
+import { eq, desc, and, sql } from 'drizzle-orm';
 
 export const config = {
   runtime: 'nodejs',
@@ -71,12 +71,16 @@ export default async function handler(req, res) {
 
     // Calculate criticality level
     let criticality = 'NOMINAL';
-    const urgentRatio = Number(urgentCount.count) / Number(totalOpen.count);
-    if (urgentRatio > 0.3) criticality = 'CRITICAL';
-    else if (urgentRatio > 0.15) criticality = 'ELEVATED';
+    const totalCount = Number(totalOpen.count);
+    const urgentCountNum = Number(urgentCount.count);
+    if (totalCount > 0) {
+      const urgentRatio = urgentCountNum / totalCount;
+      if (urgentRatio > 0.3) criticality = 'CRITICAL';
+      else if (urgentRatio > 0.15) criticality = 'ELEVATED';
+    }
 
     // ========================================================================
-    // PART 2: Category breakdown with ticket details
+    // PART 2: Category breakdown
     // ========================================================================
     const categoryData = await db
       .select({
@@ -91,7 +95,7 @@ export default async function handler(req, res) {
       .groupBy(triageResults.categoryPrimary);
 
     // Build category map
-    const categoryMap = new Map<string, any>();
+    const categoryMap = new Map();
     for (const c of categoryData) {
       categoryMap.set(c.category, c);
     }
@@ -116,8 +120,8 @@ export default async function handler(req, res) {
     });
 
     // ========================================================================
-    // PART 3: Fetch all queue tickets (for progressive disclosure)
-    // Limited to most recent 50 to avoid payload bloat
+    // PART 3: Fetch queue tickets (progressive disclosure)
+    // Limited to most recent 50 tickets
     // ========================================================================
     const riskOrder = sql`
       CASE risk_level
@@ -164,7 +168,7 @@ export default async function handler(req, res) {
         from_email: t.fromEmail,
         from_name: t.fromName,
         subject: t.subject,
-        body_plain: t.bodyPlain,
+        body_plain: t.bodyPlain || '',
         received_at: t.receivedAt,
         category: t.category,
         urgency: t.urgency,
@@ -180,10 +184,10 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       data: {
-        total_queue: Number(totalOpen.count),
-        urgent_count: Number(urgentCount.count),
+        total_queue: totalCount,
+        urgent_count: urgentCountNum,
         sent_today: 0, // Placeholder - can be calculated from sent_at timestamp
-        pending_review: Number(totalOpen.count), // All open tickets need review
+        pending_review: totalCount, // All open tickets need review
         approved: 0,
         rejected: 0,
         queue: enrichedTickets,
@@ -193,7 +197,7 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error('GET /api/hub/dashboard error:', error);
+    console.error('GET /api/hub-dashboard error:', error);
     return res.status(500).json({
       success: false,
       error: error.message || 'Unknown error',
