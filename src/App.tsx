@@ -48,9 +48,21 @@ function App() {
   return (
     <>
       {/* Main page content */}
-      <div className="min-h-screen bg-[#f3f3f3] text-on-surface">
+      <div className="min-h-screen bg-[#F8F7F4] text-on-surface relative">
+        {/* Ambient Background Image with Gradient Mask */}
+        <div 
+          className="absolute inset-y-0 right-0 w-full max-w-[1000px] pointer-events-none opacity-60 z-0"
+          style={{
+            backgroundImage: "url('/2303 Treasure Chest01102 square.JPG')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 40%',
+            maskImage: 'linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 90%)',
+            WebkitMaskImage: 'linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 90%)'
+          }}
+        />
+
         {/* Hero section with visual flair */}
-        <div className="max-w-7xl mx-auto px-6 py-16">
+        <div className="max-w-7xl mx-auto px-6 py-16 relative z-10">
           {/* Header with branding and visual element */}
           <div className="flex items-start justify-between mb-16">
             <div className="flex-1">
@@ -63,15 +75,6 @@ function App() {
               <p className="font-sans text-lg text-on-surface-variant max-w-2xl leading-relaxed">
                 Carefully review each enquiry, refine considered responses, and manage what needs attention — all in real time.
               </p>
-            </div>
-
-            {/* Treasure chest image as visual anchor */}
-            <div className="hidden md:block ml-12 flex-shrink-0">
-              <img
-                src="/2303 Treasure Chest01102 square.JPG"
-                alt="Sagitine Treasure Chest"
-                className="w-48 h-48 object-cover rounded-[3rem] shadow-2xl"
-              />
             </div>
           </div>
 
