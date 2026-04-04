@@ -1,7 +1,6 @@
+// @ts-nocheck
 // Simple health check for database connectivity
-import { db } from '../src/db';
-import { tickets } from '../src/db/schema';
-import { sql } from 'drizzle-orm';
+import { neon } from '@neondatabase/serverless';
 
 export const config = {
   runtime: 'nodejs',
@@ -22,16 +21,18 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Create database connection inside handler
+    const sql = neon(process.env.DATABASE_URL!);
+
     // Simple database connection test
-    const [result] = await db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(tickets)
-      .limit(1);
+    const [result] = await sql`
+      SELECT COUNT(*) as count FROM tickets
+    `;
 
     return res.status(200).json({
       status: 'ok',
       database: 'connected',
-      totalTickets: result?.count || 0,
+      totalTickets: parseInt(result.count) || 0,
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {

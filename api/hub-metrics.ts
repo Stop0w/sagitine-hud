@@ -1,8 +1,6 @@
 // @ts-nocheck
-// Simple working metrics endpoint
-import { db } from '../src/db';
-import { tickets } from '../src/db/schema';
-import { count } from 'drizzle-orm';
+// Hub Metrics API - Using raw SQL to avoid schema import issues
+import { neon } from '@neondatabase/serverless';
 
 export const config = {
   runtime: 'nodejs',
@@ -22,31 +20,63 @@ export default async function handler(req, res) {
   }
 
   try {
-    const result = await db
-      .select({ count: count() })
-      .from(tickets)
-      .limit(1);
+    const sql = neon(process.env.DATABASE_URL);
+
+    // Query: Total open tickets
+    const [totalOpenResult] = await sql`
+      SELECT COUNT(*) as count
+      FROM tickets
+      WHERE (status = 'new' OR status = 'classified' OR status = 'approved')
+      AND archived_at IS NULL
+    `;
+    const totalOpen = parseInt(totalOpenResult.count) || 0;
+
+    // Query: Urgent tickets
+    const [urgentResult] = await sql`
+      SELECT COUNT(*) as count
+      FROM tickets t
+      INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+      WHERE (t.status = 'new' OR t.status = 'classified')
+      AND t.archived_at IS NULL
+      AND tr.urgency >= 7
+    `;
+    const urgentCount = parseInt(urgentResult.count) || 0;
+
+    // Query: Average response time
+    const [avgResponseTimeResult] = await sql`
+      SELECT AVG(
+        EXTRACT(EPOCH FROM (t.approved_at - ie.received_at)) / 60
+      )::integer as avgMinutes
+      FROM tickets t
+      INNER JOIN inbound_emails ie ON t.email_id = ie.id
+      WHERE t.status = 'approved'
+      AND t.approved_at IS NOT NULL
+    `;
+    const avgResponseTimeMinutes = avgResponseTimeResult.avgminutes || 0;
+
+    // Determine criticality
+    let criticality = 'NOMINAL';
+    if (urgentCount >= 10 || avgResponseTimeMinutes > 120) {
+      criticality = 'HIGH';
+    } else if (urgentCount >= 5 || avgResponseTimeMinutes > 60) {
+      criticality = 'ELEVATED';
+    }
 
     return res.status(200).json({
       success: true,
       data: {
-        totalOpen: result[0]?.count || 0,
-        urgentCount: 0,
-        avgResponseTimeMinutes: 0,
-        criticality: 'NOMINAL',
+        totalOpen,
+        urgentCount,
+        avgResponseTimeMinutes,
+        criticality,
       },
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
     console.error('[METRICS] Error:', error);
-    return res.status(200).json({
-      success: true,
-      data: {
-        totalOpen: 0,
-        urgentCount: 0,
-        avgResponseTimeMinutes: 0,
-        criticality: 'NOMINAL',
-      },
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Unknown error',
       timestamp: new Date().toISOString(),
     });
   }

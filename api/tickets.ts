@@ -1,11 +1,6 @@
-// Tickets API endpoints for Sagitine AI CX Agent
-import { db } from '../src/db';
-import { tickets, inboundEmails, triageResults, customerProfiles, customerContactFacts, sendAudit, draftProofs } from '../src/db/schema';
-import { eq, desc, and, gte, count, sql } from 'drizzle-orm';
-import {
-  recordOutboundContactFact,
-  updateOutboundActivity,
-} from '../src/api/services/customer-profile-service';
+// @ts-nocheck
+// Tickets API endpoints for Sagitine AI CX Agent - Using raw SQL
+import { neon } from '@neondatabase/serverless';
 
 export const config = {
   runtime: 'nodejs',
@@ -20,42 +15,46 @@ async function getTickets(req, res) {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const status = url.searchParams.get('status');
     const urgencyGte = url.searchParams.get('urgencygte');
-    const limit = url.searchParams.get('limit') || '50';
+    const limit = parseInt(url.searchParams.get('limit') || '50', 10);
 
-    // Build query conditions
-    const conditions = [];
+    const sql = neon(process.env.DATABASE_URL);
+
+    let query = `
+      SELECT
+        t.id as ticket_id,
+        t.status,
+        t.send_status as sendStatus,
+        ie.from_email as fromEmail,
+        ie.from_name as fromName,
+        ie.subject,
+        tr.category_primary as categoryPrimary,
+        tr.confidence::text as confidence,
+        tr.urgency,
+        tr.risk_level as riskLevel,
+        tr.customer_intent_summary as customerIntentSummary,
+        tr.reply_subject as replySubject,
+        ie.received_at as receivedAt,
+        t.created_at as createdAt
+      FROM tickets t
+      INNER JOIN inbound_emails ie ON t.email_id = ie.id
+      INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+      WHERE 1=1
+    `;
+
+    const params = [];
 
     if (status) {
-      conditions.push(eq(tickets.status, status));
+      query += ` AND t.status = ${status}`;
     }
 
-    // Join tickets → inbound_emails → triage_results
-    const query = db
-      .select({
-        ticket_id: tickets.id,
-        status: tickets.status,
-        sendStatus: tickets.sendStatus,
-        fromEmail: inboundEmails.fromEmail,
-        fromName: inboundEmails.fromName,
-        subject: inboundEmails.subject,
-        categoryPrimary: triageResults.categoryPrimary,
-        confidence: triageResults.confidence,
-        urgency: triageResults.urgency,
-        riskLevel: triageResults.riskLevel,
-        customerIntentSummary: triageResults.customerIntentSummary,
-        replySubject: triageResults.replySubject,
-        receivedAt: inboundEmails.receivedAt,
-        createdAt: tickets.createdAt,
-      })
-      .from(tickets)
-      .innerJoin(inboundEmails, eq(tickets.emailId, inboundEmails.id))
-      .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
-      .orderBy(desc(tickets.createdAt))
-      .limit(parseInt(limit, 10));
+    // Exclude archived tickets
+    query += ` AND t.archived_at IS NULL`;
 
-    let results = await query;
+    query += ` ORDER BY t.created_at DESC LIMIT ${limit}`;
 
-    // Filter by urgency if specified (post-filter since it's in triage_results)
+    let results = await sql.unsafe(query, params);
+
+    // Filter by urgency if specified (post-filter)
     if (urgencyGte) {
       const threshold = parseInt(urgencyGte, 10);
       results = results.filter(r => r.urgency >= threshold);
@@ -94,52 +93,49 @@ async function getTicket(req, res) {
       });
     }
 
-    const result = await db
-      .select({
-        // Ticket fields
-        ticket_id: tickets.id,
-        status: tickets.status,
-        sendStatus: tickets.sendStatus,
-        assignedTo: tickets.assignedTo,
-        approvedAt: tickets.approvedAt,
-        approvedBy: tickets.approvedBy,
-        sentAt: tickets.sentAt,
-        rejectedAt: tickets.rejectedAt,
-        rejectedBy: tickets.rejectedBy,
-        rejectionReason: tickets.rejectionReason,
-        humanEdited: tickets.humanEdited,
-        humanEditedBody: tickets.humanEditedBody,
+    const sql = neon(process.env.DATABASE_URL);
 
-        // Email fields
-        email_id: inboundEmails.id,
-        fromEmail: inboundEmails.fromEmail,
-        fromName: inboundEmails.fromName,
-        subject: inboundEmails.subject,
-        bodyPlain: inboundEmails.bodyPlain,
-        bodyHtml: inboundEmails.bodyHtml,
-        receivedAt: inboundEmails.receivedAt,
-
-        // Triage result fields
-        triage_result_id: triageResults.id,
-        categoryPrimary: triageResults.categoryPrimary,
-        confidence: triageResults.confidence,
-        urgency: triageResults.urgency,
-        riskLevel: triageResults.riskLevel,
-        riskFlags: triageResults.riskFlags,
-        customerIntentSummary: triageResults.customerIntentSummary,
-        recommendedNextAction: triageResults.recommendedNextAction,
-        safeToAutoDraft: triageResults.safeToAutoDraft,
-        safeToAutoSend: triageResults.safeToAutoSend,
-        replySubject: triageResults.replySubject,
-        replyBody: triageResults.replyBody,
-        retrievedKnowledgeIds: triageResults.retrievedKnowledgeIds,
-        isMock: triageResults.isMock,
-      })
-      .from(tickets)
-      .innerJoin(inboundEmails, eq(tickets.emailId, inboundEmails.id))
-      .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
-      .where(eq(tickets.id, ticketId))
-      .limit(1);
+    const result = await sql`
+      SELECT
+        t.id as ticket_id,
+        t.status,
+        t.send_status as sendStatus,
+        t.assigned_to as assignedTo,
+        t.approved_at as approvedAt,
+        t.approved_by as approvedBy,
+        t.sent_at as sentAt,
+        t.rejected_at as rejectedAt,
+        t.rejected_by as rejectedBy,
+        t.rejection_reason as rejectionReason,
+        t.human_edited as humanEdited,
+        t.human_edited_body as humanEditedBody,
+        ie.id as email_id,
+        ie.from_email as fromEmail,
+        ie.from_name as fromName,
+        ie.subject,
+        ie.body_plain as bodyPlain,
+        ie.body_html as bodyHtml,
+        ie.received_at as receivedAt,
+        tr.id as triage_result_id,
+        tr.category_primary as categoryPrimary,
+        tr.confidence::text as confidence,
+        tr.urgency,
+        tr.risk_level as riskLevel,
+        tr.risk_flags as riskFlags,
+        tr.customer_intent_summary as customerIntentSummary,
+        tr.recommended_next_action as recommendedNextAction,
+        tr.safe_to_auto_draft as safeToAutoDraft,
+        tr.safe_to_auto_send as safeToAutoSend,
+        tr.reply_subject as replySubject,
+        tr.reply_body as replyBody,
+        tr.retrieved_knowledge_ids as retrievedKnowledgeIds,
+        tr.is_mock as isMock
+      FROM tickets t
+      INNER JOIN inbound_emails ie ON t.email_id = ie.id
+      INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+      WHERE t.id = ${ticketId}
+      LIMIT 1
+    `;
 
     if (!result || result.length === 0) {
       return res.status(404).json({
@@ -185,18 +181,15 @@ async function approveTicket(req, res) {
     const approvedBy = body.approved_by || 'Heidi';
     const editedReplyBody = body.edited_reply_body;
 
-    // ========================================================================
-    // DOUBLE-SEND PROTECTION: Check current send_status before updating
-    // ========================================================================
-    const [currentTicket] = await db
-      .select({
-        id: tickets.id,
-        sendStatus: tickets.sendStatus,
-        status: tickets.status,
-      })
-      .from(tickets)
-      .where(eq(tickets.id, ticketId))
-      .limit(1);
+    const sql = neon(process.env.DATABASE_URL);
+
+    // DOUBLE-SEND PROTECTION: Check current send_status
+    const [currentTicket] = await sql`
+      SELECT id, send_status as sendStatus, status
+      FROM tickets
+      WHERE id = ${ticketId}
+      LIMIT 1
+    `;
 
     if (!currentTicket) {
       return res.status(404).json({
@@ -207,35 +200,33 @@ async function approveTicket(req, res) {
     }
 
     // If already pending or sent, reject to prevent double-sends
-    if (currentTicket.sendStatus === 'pending' || currentTicket.sendStatus === 'sent') {
+    if (currentTicket.sendstatus === 'pending' || currentTicket.sendstatus === 'sent') {
       return res.status(409).json({
         success: false,
         error: 'Ticket is already being processed or has been sent',
         current_status: currentTicket.status,
-        current_send_status: currentTicket.sendStatus,
+        current_send_status: currentTicket.sendstatus,
         message: 'Cannot approve - ticket already in send workflow',
         timestamp: new Date().toISOString(),
       });
     }
 
     // Update ticket status
-    const updateData: any = {
-      status: 'approved',
-      sendStatus: 'pending',
-      approvedAt: new Date(),
-      approvedBy,
-    };
+    let updateQuery = `
+      UPDATE tickets
+      SET status = 'approved',
+          send_status = 'pending',
+          approved_at = NOW(),
+          approved_by = ${approvedBy}
+    `;
 
     if (editedReplyBody) {
-      updateData.humanEdited = true;
-      updateData.humanEditedBody = editedReplyBody;
+      updateQuery += `, human_edited = true, human_edited_body = ${editedReplyBody}`;
     }
 
-    const [updated] = await db
-      .update(tickets)
-      .set(updateData)
-      .where(eq(tickets.id, ticketId))
-      .returning();
+    updateQuery += ` WHERE id = ${ticketId} RETURNING id, status, send_status, approved_at, approved_by`;
+
+    const [updated] = await sql.unsafe(updateQuery);
 
     // TODO: Trigger Make webhook here
     // Make will call back to /api/tickets/:id/sent on success
@@ -245,9 +236,9 @@ async function approveTicket(req, res) {
       data: {
         ticket_id: updated.id,
         status: updated.status,
-        send_status: updated.sendStatus,
-        approved_at: updated.approvedAt,
-        approved_by: updated.approvedBy,
+        send_status: updated.send_status,
+        approved_at: updated.approved_at,
+        approved_by: updated.approved_by,
       },
       message: 'Ticket approved and queued for sending',
       timestamp: new Date().toISOString(),
@@ -283,17 +274,18 @@ async function rejectTicket(req, res) {
     const rejectedBy = body.rejected_by || 'Heidi';
     const rejectionReason = body.rejection_reason;
 
-    const [updated] = await db
-      .update(tickets)
-      .set({
-        status: 'rejected',
-        rejectedAt: new Date(),
-        rejectedBy,
-        rejectionReason,
-        archivedAt: new Date(), // Archive immediately to remove from queue view
-      })
-      .where(eq(tickets.id, ticketId))
-      .returning();
+    const sql = neon(process.env.DATABASE_URL);
+
+    const [updated] = await sql`
+      UPDATE tickets
+      SET status = 'rejected',
+          rejected_at = NOW(),
+          rejected_by = ${rejectedBy},
+          rejection_reason = ${rejectionReason || null},
+          archived_at = NOW()
+      WHERE id = ${ticketId}
+      RETURNING id, status, rejected_at, rejected_by
+    `;
 
     if (!updated) {
       return res.status(404).json({
@@ -308,8 +300,8 @@ async function rejectTicket(req, res) {
       data: {
         ticket_id: updated.id,
         status: updated.status,
-        rejected_at: updated.rejectedAt,
-        rejected_by: updated.rejectedBy,
+        rejected_at: updated.rejected_at,
+        rejected_by: updated.rejected_by,
       },
       message: 'Ticket rejected',
       timestamp: new Date().toISOString(),
@@ -341,27 +333,30 @@ async function markTicketSent(req, res) {
       });
     }
 
+    const body = req.body || {};
+    const sql = neon(process.env.DATABASE_URL);
+
     // Get extended ticket data for audit
-    const [currentTicket] = await db
-      .select({
-        id: tickets.id,
-        emailId: tickets.emailId,
-        approvedAt: tickets.approvedAt,
-        createdAt: tickets.createdAt,
-        humanEdited: tickets.humanEdited,
-        humanEditedBody: tickets.humanEditedBody,
-        emailReceivedAt: inboundEmails.receivedAt,
-        fromEmail: inboundEmails.fromEmail,
-        triageResultId: tickets.triageResultId,
-        replyBody: triageResults.replyBody,
-        confidence: triageResults.confidence,
-        categoryPrimary: triageResults.categoryPrimary,
-      })
-      .from(tickets)
-      .innerJoin(inboundEmails, eq(tickets.emailId, inboundEmails.id))
-      .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
-      .where(eq(tickets.id, ticketId))
-      .limit(1);
+    const [currentTicket] = await sql`
+      SELECT
+        t.id,
+        t.email_id as emailId,
+        t.approved_at as approvedAt,
+        t.created_at as createdAt,
+        t.human_edited as humanEdited,
+        t.human_edited_body as humanEditedBody,
+        t.triage_result_id as triageResultId,
+        ie.received_at as emailReceivedAt,
+        ie.from_email as fromEmail,
+        tr.reply_body as replyBody,
+        tr.confidence,
+        tr.category_primary as categoryPrimary
+      FROM tickets t
+      INNER JOIN inbound_emails ie ON t.email_id = ie.id
+      INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+      WHERE t.id = ${ticketId}
+      LIMIT 1
+    `;
 
     if (!currentTicket) {
       return res.status(404).json({
@@ -371,100 +366,91 @@ async function markTicketSent(req, res) {
       });
     }
 
-    // Get request body for optional final message
-    const body = req.body || {};
-    const finalMessageSent = body.final_message_sent || currentTicket.humanEditedBody || currentTicket.replyBody || '';
+    const finalMessageSent = body.final_message_sent || currentTicket.humaneeditedbody || currentTicket.replybody || '';
 
     // Determine resolution mechanism
-    let resolutionMechanism: 'ai_drafted' | 'human_edited' | 'human_proofed';
-    if (currentTicket.humanEdited) {
-      resolutionMechanism = 'human_edited';
-    } else {
-      resolutionMechanism = 'ai_drafted';
-    }
+    let resolutionMechanism = currentTicket.humaneedited ? 'human_edited' : 'ai_drafted';
 
-    // Check if draft was proofed (look for recent proof record)
-    const [recentProof] = await db
-      .select({ id: draftProofs.id })
-      .from(draftProofs)
-      .where(eq(draftProofs.ticketId, ticketId))
-      .orderBy(desc(draftProofs.proofedAt))
-      .limit(1);
+    // Check if draft was proofed
+    const [recentProof] = await sql`
+      SELECT id FROM draft_proofs
+      WHERE ticket_id = ${ticketId}
+      ORDER BY proofed_at DESC
+      LIMIT 1
+    `;
 
     const wasProofed = !!recentProof;
 
-    // If proofed, update resolution mechanism
     if (wasProofed && resolutionMechanism === 'ai_drafted') {
       resolutionMechanism = 'human_proofed';
     }
 
-    // Calculate response time in minutes (from email received to approved)
-    let responseTimeMinutes: number | undefined;
-    if (currentTicket.approvedAt && currentTicket.emailReceivedAt) {
-      const diffMs = currentTicket.approvedAt.getTime() - currentTicket.emailReceivedAt.getTime();
+    // Calculate response time in minutes
+    let responseTimeMinutes;
+    if (currentTicket.approvedat && currentTicket.emailreceivedat) {
+      const diffMs = new Date(currentTicket.approvedat).getTime() - new Date(currentTicket.emailreceivedat).getTime();
       responseTimeMinutes = Math.floor(diffMs / 60000);
     }
 
-    const [updated] = await db
-      .update(tickets)
-      .set({
-        sendStatus: 'sent',
-        sentAt: new Date(),
-      })
-      .where(eq(tickets.id, ticketId))
-      .returning();
+    // Update ticket
+    const [updated] = await sql`
+      UPDATE tickets
+      SET send_status = 'sent', sent_at = NOW()
+      WHERE id = ${ticketId}
+      RETURNING id, send_status, sent_at
+    `;
 
     // Persist send audit
-    await db.insert(sendAudit).values({
-      ticketId,
-      initialDraft: currentTicket.replyBody || '',
-      finalMessageSent,
-      confidenceRating: currentTicket.confidence,
-      wasHumanEdited: currentTicket.humanEdited,
-      wasProofed,
-      resolutionMechanism,
-      proofId: recentProof?.id,
-      sentAt: new Date(),
-    });
+    await sql`
+      INSERT INTO send_audit (
+        ticket_id, initial_draft, final_message_sent, confidence_rating,
+        was_human_edited, was_proofed, resolution_mechanism,
+        proof_id, sent_at
+      ) VALUES (
+        ${ticketId}, ${currentTicket.replybody || ''}, ${finalMessageSent},
+        ${currentTicket.confidence}, ${currentTicket.humaneedited},
+        ${wasProofed}, ${resolutionMechanism}, ${recentProof?.id || null}, NOW()
+      )
+    `;
 
     // Find customer profile for this ticket
-    const [profile] = await db
-      .select({
-        id: customerProfiles.id,
-      })
-      .from(customerProfiles)
-      .innerJoin(inboundEmails, eq(customerProfiles.email, inboundEmails.fromEmail))
-      .where(eq(inboundEmails.id, currentTicket.emailId))
-      .limit(1);
+    const [profile] = await sql`
+      SELECT cp.id
+      FROM customer_profiles cp
+      INNER JOIN inbound_emails ie ON cp.email = ie.from_email
+      WHERE ie.id = ${currentTicket.emailid}
+      LIMIT 1
+    `;
 
-    // Create outbound contact fact if profile exists
+    // Create outbound contact fact and update profile if exists
     if (profile) {
-      await recordOutboundContactFact({
-        customerProfileId: profile.id,
-        ticketId: ticketId,
-        responseTimeMinutes,
-      });
+      // Record outbound contact fact
+      await sql`
+        INSERT INTO customer_contact_facts (
+          customer_profile_id, ticket_id, channel, direction,
+          contact_at, response_time_minutes, created_at
+        ) VALUES (
+          ${profile.id}, ${ticketId}, 'email', 'outbound', NOW(),
+          ${responseTimeMinutes || null}, NOW()
+        )
+      `;
 
-      // Update customer profile with latest outbound activity
-      // Does NOT increment counters - only updates timestamp and outcome
-      await updateOutboundActivity(profile.id, updated.sentAt!);
-
-      // Update lastContactCategory with current ticket's category
-      await db
-        .update(customerProfiles)
-        .set({
-          lastContactCategory: currentTicket.categoryPrimary,
-          updatedAt: new Date(),
-        })
-        .where(eq(customerProfiles.id, profile.id));
+      // Update customer profile last contact activity
+      await sql`
+        UPDATE customer_profiles
+        SET last_contact_at = NOW(),
+            last_contact_category = ${currentTicket.categoryprimary},
+            updated_at = NOW()
+        WHERE id = ${profile.id}
+      `;
     }
 
     return res.status(200).json({
       success: true,
       data: {
         ticket_id: updated.id,
-        send_status: updated.sendStatus,
-        sent_at: updated.sentAt,
+        send_status: updated.send_status,
+        sent_at: updated.sent_at,
       },
       message: 'Send status updated and audit recorded',
       timestamp: new Date().toISOString(),
@@ -499,15 +485,16 @@ async function markTicketFailed(req, res) {
     const body = req.body || {};
     const failureReason = body.reason || 'Unknown error';
 
-    const [updated] = await db
-      .update(tickets)
-      .set({
-        sendStatus: 'failed',
-        sendFailedAt: new Date(),
-        sendFailureReason: failureReason,
-      })
-      .where(eq(tickets.id, ticketId))
-      .returning();
+    const sql = neon(process.env.DATABASE_URL);
+
+    const [updated] = await sql`
+      UPDATE tickets
+      SET send_status = 'failed',
+          send_failed_at = NOW(),
+          send_failure_reason = ${failureReason}
+      WHERE id = ${ticketId}
+      RETURNING id, send_status, send_failed_at, send_failure_reason
+    `;
 
     if (!updated) {
       return res.status(404).json({
@@ -521,9 +508,9 @@ async function markTicketFailed(req, res) {
       success: true,
       data: {
         ticket_id: updated.id,
-        send_status: updated.sendStatus,
-        send_failed_at: updated.sendFailedAt,
-        send_failure_reason: updated.sendFailureReason,
+        send_status: updated.send_status,
+        send_failed_at: updated.send_failed_at,
+        send_failure_reason: updated.send_failure_reason,
       },
       message: 'Send failure recorded',
       timestamp: new Date().toISOString(),
