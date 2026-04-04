@@ -1,5 +1,5 @@
 // Tickets API endpoints for Sagitine AI CX Agent
-import { db } from '../src/db';
+import { db } from '../src/db/index.js';
 import { tickets, inboundEmails, triageResults, customerProfiles, customerContactFacts, sendAudit, draftProofs } from '../src/db/schema';
 import { eq, desc, and, gte, count, sql } from 'drizzle-orm';
 import {

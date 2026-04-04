@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Simple working metrics endpoint
-import { db } from '../src/db';
+import { db } from '../src/db/index.js';
 import { tickets } from '../src/db/schema';
 import { count } from 'drizzle-orm';
 

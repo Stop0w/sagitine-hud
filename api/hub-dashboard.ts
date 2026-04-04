@@ -1,5 +1,5 @@
 // Hub Dashboard API - Combined metrics + categories for single-poll optimisation
-import { db } from '../src/db';
+import { db } from '../src/db/index.js';
 import { tickets, inboundEmails, triageResults } from '../src/db/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 
