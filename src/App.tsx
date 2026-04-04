@@ -16,9 +16,9 @@ function App() {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Fetch real data from WORKING API endpoint
-  const { data: apiData, loading, error } = useSagitineSync('/api/hub/metrics', {
+  const { data: apiData, loading, error } = useSagitineSync('/api/hub-metrics', {
     pollingIntervalMs: 10000,
-    enabled: true, // Re-enabled - using existing working endpoint
+    enabled: true,
   });
 
   // Transform API response into UI format (use mock data as fallback)
