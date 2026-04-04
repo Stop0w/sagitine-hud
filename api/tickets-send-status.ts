@@ -3,7 +3,9 @@
 //
 // Usage: POST /api/tickets-send-status?id=<outlook-message-id>
 // Body: { "sent_at": "2024-04-02T10:30:00Z", "sent_by": "Heidi" }
-import { db } from '../src/db';
+import { drizzle } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
+import * as schema from '../src/db/schema';
 import { tickets, inboundEmails } from '../src/db/schema';
 import { eq } from 'drizzle-orm';
 
@@ -79,6 +81,10 @@ export default async function handler(req: any, res: any) {
         timestamp: new Date().toISOString(),
       } as SendStatusResponse);
     }
+
+    // Create database connection inside handler (Vercel Functions best practice)
+    const sql = neon(process.env.DATABASE_URL!);
+    const db = drizzle(sql, { schema });
 
     // Find ticket by sourceMessageId
     console.log('Looking up ticket for Outlook Message ID:', outlookMessageId);
