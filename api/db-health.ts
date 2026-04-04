@@ -1,5 +1,5 @@
 // Simple health check for database connectivity
-import { db } from '../src/db/index.js';
+import { db } from '../src/db';
 import { tickets } from '../src/db/schema';
 import { sql } from 'drizzle-orm';
 

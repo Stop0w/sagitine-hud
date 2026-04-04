@@ -1,5 +1,5 @@
 // Test database connection and query
-import { db } from '../src/db/index.js';
+import { db } from '../src/db';
 import { tickets, inboundEmails } from '../src/db/schema';
 import { eq } from 'drizzle-orm';
 
