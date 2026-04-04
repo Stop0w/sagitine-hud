@@ -19,40 +19,56 @@ async function getTickets(req, res) {
 
     const sql = neon(process.env.DATABASE_URL);
 
-    let query = `
-      SELECT
-        t.id as ticket_id,
-        t.status,
-        t.send_status as sendStatus,
-        ie.from_email as fromEmail,
-        ie.from_name as fromName,
-        ie.subject,
-        tr.category_primary as categoryPrimary,
-        tr.confidence::text as confidence,
-        tr.urgency,
-        tr.risk_level as riskLevel,
-        tr.customer_intent_summary as customerIntentSummary,
-        tr.reply_subject as replySubject,
-        ie.received_at as receivedAt,
-        t.created_at as createdAt
-      FROM tickets t
-      INNER JOIN inbound_emails ie ON t.email_id = ie.id
-      INNER JOIN triage_results tr ON t.triage_result_id = tr.id
-      WHERE 1=1
-    `;
-
-    const params = [];
-
+    let results;
     if (status) {
-      query += ` AND t.status = ${status}`;
+      results = await sql`
+        SELECT
+          t.id as ticket_id,
+          t.status,
+          t.send_status as sendStatus,
+          ie.from_email as fromEmail,
+          ie.from_name as fromName,
+          ie.subject,
+          tr.category_primary as categoryPrimary,
+          tr.confidence::text as confidence,
+          tr.urgency,
+          tr.risk_level as riskLevel,
+          tr.customer_intent_summary as customerIntentSummary,
+          tr.reply_subject as replySubject,
+          ie.received_at as receivedAt,
+          t.created_at as createdAt
+        FROM tickets t
+        INNER JOIN inbound_emails ie ON t.email_id = ie.id
+        INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+        WHERE t.archived_at IS NULL AND t.status = ${status}
+        ORDER BY t.created_at DESC
+        LIMIT ${limit}
+      `;
+    } else {
+      results = await sql`
+        SELECT
+          t.id as ticket_id,
+          t.status,
+          t.send_status as sendStatus,
+          ie.from_email as fromEmail,
+          ie.from_name as fromName,
+          ie.subject,
+          tr.category_primary as categoryPrimary,
+          tr.confidence::text as confidence,
+          tr.urgency,
+          tr.risk_level as riskLevel,
+          tr.customer_intent_summary as customerIntentSummary,
+          tr.reply_subject as replySubject,
+          ie.received_at as receivedAt,
+          t.created_at as createdAt
+        FROM tickets t
+        INNER JOIN inbound_emails ie ON t.email_id = ie.id
+        INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+        WHERE t.archived_at IS NULL
+        ORDER BY t.created_at DESC
+        LIMIT ${limit}
+      `;
     }
-
-    // Exclude archived tickets
-    query += ` AND t.archived_at IS NULL`;
-
-    query += ` ORDER BY t.created_at DESC LIMIT ${limit}`;
-
-    let results = await sql.unsafe(query, params);
 
     // Filter by urgency if specified (post-filter)
     if (urgencyGte) {
