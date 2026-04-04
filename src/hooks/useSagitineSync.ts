@@ -1,23 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-interface HubData {
-  totalOpen: number;
-  urgentCount: number;
-  avgResponseTimeMinutes: number;
-  criticality: string;
-}
-
 interface UseSagitineSyncOptions {
   pollingIntervalMs?: number;
   enabled?: boolean;
 }
 
-interface UseSagitineSyncResult {
-  data: HubData | null;
+interface UseSagitineSyncResult<T> {
+  data: T | null;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
-  updateLocalState: (updates: Partial<HubData>) => void;
+  updateLocalState: (updates: Partial<T>) => void;
 }
 
 /**
@@ -36,13 +29,13 @@ interface UseSagitineSyncResult {
  *   { pollingIntervalMs: 10000 }
  * );
  */
-export function useSagitineSync(
+export function useSagitineSync<T = unknown>(
   endpoint: string = '/api/metrics',
   options: UseSagitineSyncOptions = {}
-): UseSagitineSyncResult {
+): UseSagitineSyncResult<T> {
   const { pollingIntervalMs = 10000, enabled = true } = options;
 
-  const [data, setData] = useState<HubData | null>(null);
+  const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isInitialFetch, setIsInitialFetch] = useState<boolean>(true);
@@ -117,7 +110,7 @@ export function useSagitineSync(
    * @example
    * updateLocalState({ total_queue: 5 }); // Decrement immediately
    */
-  const updateLocalState = useCallback((updates: Partial<HubData>) => {
+  const updateLocalState = useCallback((updates: Partial<T>) => {
     setData(prev => prev ? { ...prev, ...updates } : null);
   }, []);
 

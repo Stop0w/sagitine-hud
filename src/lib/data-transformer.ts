@@ -1,121 +1,149 @@
 import type { HubMvpData } from '../features/notification-hub/types/mvp';
-import type { CategorySummaryItem, RiskLevel, CriticalityLevel } from '../features/notification-hub/types';
+import type { CategorySummaryItem, QueueTicketItem, RiskLevel, UrgencyLevel, CriticalityLevel } from '../features/notification-hub/types';
 
-/**
- * Transform actual working API responses into HubMvpData format.
- *
- * This version works with the REAL Sagitine API structure:
- * - /api/hub/metrics (working)
- * - /api/hub/categories (working)
- * - /api/hub/queue/:category (working)
- */
+// ─── API Response Shapes (from /api/hub-dashboard) ───────────────────────────
+// PostgreSQL normalises unquoted aliases to lowercase.
 
-// Mock categories until we fetch them
-const CATEGORY_CONFIG: Record<string, { label: string; shortLabel: string; urgency: 'low' | 'medium' | 'high' }> = {
-  damaged_missing_faulty: {
-    label: 'Damaged & Faulty',
-    shortLabel: 'Damaged',
-    urgency: 'high',
-  },
-  shipping_delivery_order_issue: {
-    label: 'Shipping & Delivery',
-    shortLabel: 'Shipping',
-    urgency: 'medium',
-  },
-  return_refund_exchange: {
-    label: 'Returns & Exchanges',
-    shortLabel: 'Returns',
-    urgency: 'low',
-  },
-  order_modification_cancellation: {
-    label: 'Order Modifications',
-    shortLabel: 'Modifications',
-    urgency: 'high',
-  },
-  product_usage_guidance: {
-    label: 'Product Guidance',
-    shortLabel: 'Guidance',
-    urgency: 'low',
-  },
-  pre_purchase_question: {
-    label: 'Pre-Purchase Questions',
-    shortLabel: 'Pre-Purchase',
-    urgency: 'low',
-  },
-  stock_availability: {
-    label: 'Stock & Availability',
-    shortLabel: 'Stock',
-    urgency: 'low',
-  },
-  brand_feedback_general: {
-    label: 'General Feedback',
-    shortLabel: 'Feedback',
-    urgency: 'low',
-  },
-  partnership_wholesale_press: {
-    label: 'Partnerships & Press',
-    shortLabel: 'Partnerships',
-    urgency: 'low',
-  },
-  account_billing_payment: {
-    label: 'Account & Billing',
-    shortLabel: 'Billing',
-    urgency: 'medium',
-  },
-  praise_testimonial_ugc: {
-    label: 'Praise & Testimonials',
-    shortLabel: 'Praise',
-    urgency: 'low',
-  },
-  spam_solicitation: {
-    label: 'Spam & Solicitation',
-    shortLabel: 'Spam',
-    urgency: 'low',
-  },
-  other_uncategorized: {
-    label: 'Uncategorized',
-    shortLabel: 'Other',
-    urgency: 'low',
-  },
-};
-
-interface ApiMetricsResponse {
-  totalOpen: number;
-  urgentCount: number;
-  avgResponseTimeMinutes: number;
-  criticality: string;
+export interface ApiQueueItem {
+  ticket_id: string;
+  status: string;
+  sendstatus: string | null;
+  fromemail: string;
+  fromname: string | null;
+  subject: string;
+  categoryprimary: string;
+  confidence: string;         // arrives as a numeric string, e.g. "0.750"
+  urgency: number;            // 0–10 integer
+  risklevel: string;
+  customerintentsummary: string | null;
+  replysubject: string | null;
+  receivedat: string;         // ISO timestamp
+  createdat: string;          // ISO timestamp
 }
 
-export function transformApiToHubData(apiResponse: ApiMetricsResponse): HubMvpData {
-  const { totalOpen, urgentCount, avgResponseTimeMinutes, criticality } = apiResponse;
+export interface ApiCategoryItem {
+  category: string;
+  categoryLabel: string;
+  count: number;
+  urgency: string;            // 'low' | 'medium' | 'high'
+  avgConfidence: number;
+}
 
-  // Build categories (for now, just return empty categories - will be fetched when clicked)
-  const categories: CategorySummaryItem[] = Object.keys(CATEGORY_CONFIG).map(categoryId => {
-    const config = CATEGORY_CONFIG[categoryId];
+export interface ApiDashboardResponse {
+  total_queue: number;
+  urgent_count: number;
+  sent_today: number;
+  pending_review: number;
+  approved: number;
+  rejected: number;
+  queue: ApiQueueItem[];
+  categories: ApiCategoryItem[];
+  _timezone: string;
+}
+
+// ─── Display config (labels + short labels for all canonical categories) ─────
+
+const CATEGORY_CONFIG: Record<string, { label: string; shortLabel: string }> = {
+  damaged_missing_faulty:        { label: 'Damaged & Faulty',       shortLabel: 'Damaged' },
+  shipping_delivery_order_issue: { label: 'Shipping & Delivery',    shortLabel: 'Shipping' },
+  return_refund_exchange:        { label: 'Returns & Exchanges',    shortLabel: 'Returns' },
+  order_modification_cancellation:{ label: 'Order Modifications',  shortLabel: 'Modifications' },
+  product_usage_guidance:        { label: 'Product Guidance',       shortLabel: 'Guidance' },
+  pre_purchase_question:         { label: 'Pre-Purchase Questions', shortLabel: 'Pre-Purchase' },
+  stock_availability:            { label: 'Stock & Availability',   shortLabel: 'Stock' },
+  brand_feedback_general:        { label: 'General Feedback',       shortLabel: 'Feedback' },
+  partnership_wholesale_press:   { label: 'Partnerships & Press',   shortLabel: 'Partnerships' },
+  account_billing_payment:       { label: 'Account & Billing',      shortLabel: 'Billing' },
+  praise_testimonial_ugc:        { label: 'Praise & Testimonials',  shortLabel: 'Praise' },
+  spam_solicitation:             { label: 'Spam & Solicitation',    shortLabel: 'Spam' },
+  other_uncategorized:           { label: 'Uncategorised',          shortLabel: 'Other' },
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function urgencyIntToLevel(urgency: number): UrgencyLevel {
+  if (urgency >= 7) return 'high';
+  if (urgency >= 4) return 'medium';
+  return 'low';
+}
+
+function waitingMinutes(receivedAt: string): number {
+  const diff = Date.now() - new Date(receivedAt).getTime();
+  return Math.max(0, Math.floor(diff / 60_000));
+}
+
+function normaliseStatus(status: string): QueueTicketItem['status'] {
+  const map: Record<string, QueueTicketItem['status']> = {
+    new:              'new',
+    classified:       'triaged',
+    drafted:          'drafted',
+    review_required:  'review_required',
+  };
+  return map[status] ?? 'new';
+}
+
+// ─── Main transformer ─────────────────────────────────────────────────────────
+
+export function transformApiToHubData(api: ApiDashboardResponse): HubMvpData {
+  // 1. Build categories with real counts from the API
+  const categories: CategorySummaryItem[] = Object.entries(CATEGORY_CONFIG).map(([id, cfg]) => {
+    const apiCat = api.categories.find(c => c.category === id);
     return {
-      id: categoryId,
-      label: config.label,
-      shortLabel: config.shortLabel,
-      count: 0, // Will be fetched when category is clicked
-      urgency: config.urgency,
-      hasNew: false,
-      avgConfidence: 0,
-      avgAgeMinutes: 0,
+      id,
+      label: cfg.label,
+      shortLabel: cfg.shortLabel,
+      count: apiCat?.count ?? 0,
+      urgency: (apiCat?.urgency as UrgencyLevel) ?? 'low',
+      hasNew: (apiCat?.count ?? 0) > 0,
+      avgConfidence: apiCat?.avgConfidence ?? 0,
+      avgAgeMinutes: 0,   // not yet provided by the dashboard endpoint
     };
   });
+
+  // 2. Map queue items and group by category
+  const queueByCategory: Record<string, QueueTicketItem[]> = {};
+
+  for (const item of api.queue) {
+    const categoryId = item.categoryprimary;
+
+    const ticket: QueueTicketItem = {
+      id:             item.ticket_id,
+      emailId:        item.ticket_id,   // email_id not in payload; ticket_id used as safe stand-in
+      customerName:   item.fromname ?? item.fromemail,
+      subject:        item.subject,
+      preview:        (item.customerintentsummary ?? item.subject).slice(0, 150),
+      categoryId,
+      urgency:        urgencyIntToLevel(item.urgency),
+      confidence:     parseFloat(item.confidence) || 0,
+      receivedAt:     item.receivedat,
+      waitingMinutes: waitingMinutes(item.receivedat),
+      riskLevel:      (item.risklevel as RiskLevel) ?? 'low',
+      status:         normaliseStatus(item.status),
+    };
+
+    if (!queueByCategory[categoryId]) {
+      queueByCategory[categoryId] = [];
+    }
+    queueByCategory[categoryId].push(ticket);
+  }
+
+  // 3. Derive criticality from urgent / total ratio
+  const ratio = api.total_queue > 0 ? api.urgent_count / api.total_queue : 0;
+  const criticality: CriticalityLevel =
+    ratio >= 0.5 ? 'CRITICAL' : ratio >= 0.2 ? 'ELEVATED' : 'NOMINAL';
 
   return {
     categories,
     metrics: {
-      totalOpen,
-      urgentCount,
-      reviewCount: totalOpen,
-      avgResponseTimeMinutes,
-      avgConfidence: 0,
-      criticality: criticality as CriticalityLevel,
+      totalOpen:              api.total_queue,
+      urgentCount:            api.urgent_count,
+      reviewCount:            api.pending_review,
+      avgResponseTimeMinutes: 0,    // not provided by dashboard endpoint
+      avgConfidence:          0,    // not aggregated at dashboard level
+      criticality,
     },
-    queueByCategory: {}, // Will be fetched when category is clicked
-    consoleByTicketId: {}, // Will be fetched when ticket is clicked
+    queueByCategory,
+    consoleByTicketId: {},  // fetched on-demand via /api/hub/ticket/:id
     lastUpdatedAt: new Date().toISOString(),
   };
 }

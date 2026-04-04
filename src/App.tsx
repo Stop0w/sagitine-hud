@@ -5,6 +5,7 @@ import { NotificationPill } from "./features/notification-hub/components/Notific
 import { NotificationHub } from "./features/notification-hub/components/NotificationHub";
 import { useSagitineSync } from "./hooks/useSagitineSync";
 import { transformApiToHubData } from "./lib/data-transformer";
+import type { ApiDashboardResponse } from "./lib/data-transformer";
 import type { HubView } from "./features/notification-hub/types";
 
 function App() {
@@ -15,8 +16,8 @@ function App() {
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Fetch real data from WORKING API endpoint
-  const { data: apiData, loading, error } = useSagitineSync('/api/hub-metrics', {
+  // Fetch full dashboard data (queue + categories + metrics)
+  const { data: apiData, loading, error } = useSagitineSync<ApiDashboardResponse>('/api/hub-dashboard', {
     pollingIntervalMs: 10000,
     enabled: true,
   });
