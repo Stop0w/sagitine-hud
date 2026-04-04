@@ -1,32 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface HubData {
-  total_queue: number;
-  urgent_count: number;
-  sent_today: number;
-  pending_review: number;
-  approved: number;
-  rejected: number;
-  queue: Array<{
-    id: string;
-    from_email: string;
-    from_name: string;
-    subject: string;
-    body_plain: string;
-    received_at: string;
-    category: string;
-    urgency: number;
-    risk_level: string;
-    status: string;
-    waitingMinutes: number;
-  }>;
-  categories?: Array<{
-    category: string;
-    categoryLabel: string;
-    count: number;
-    urgency: 'low' | 'medium' | 'high';
-    avgConfidence: number;
-  }>;
+  totalOpen: number;
+  urgentCount: number;
+  avgResponseTimeMinutes: number;
+  criticality: string;
 }
 
 interface UseSagitineSyncOptions {

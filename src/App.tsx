@@ -15,10 +15,10 @@ function App() {
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // TEMPORARY: Use mock data to stop flickering while debugging API crash
+  // Fetch real data from WORKING API endpoint
   const { data: apiData, loading, error } = useSagitineSync('/api/hub/metrics', {
     pollingIntervalMs: 10000,
-    enabled: false, // DISABLE POLLING - prevents flickering
+    enabled: true, // Re-enabled - using existing working endpoint
   });
 
   // Transform API response into UI format (use mock data as fallback)
