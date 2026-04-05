@@ -1,24 +1,12 @@
 {
-  "buildCommand": "chmod -R +x node_modules/.bin && NODE_OPTIONS=--max-old-space-size=4096 npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/api/tickets/:path*",
-      "destination": "/api/tickets"
-    },
-    {
-      "source": "/api/hub/:path*",
-      "destination": "/api/hub"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
     }
   ]
 }

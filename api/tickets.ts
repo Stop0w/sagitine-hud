@@ -10,7 +10,7 @@ export const config = {
 // GET /api/tickets - List all tickets for HUD queue
 // ============================================================================
 
-async function getTickets(req, res) {
+async function getTickets(req: any, res: any) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const status = url.searchParams.get('status');
@@ -96,7 +96,7 @@ async function getTickets(req, res) {
 // GET /api/tickets/:id - Single ticket for resolution console
 // ============================================================================
 
-async function getTicket(req, res) {
+async function getTicket(req: any, res: any) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const ticketId = url.pathname.split('/').pop();
@@ -145,10 +145,17 @@ async function getTicket(req, res) {
         tr.reply_subject as replySubject,
         tr.reply_body as replyBody,
         tr.retrieved_knowledge_ids as retrievedKnowledgeIds,
-        tr.is_mock as isMock
+        tr.is_mock as isMock,
+        cp.id as customerProfileId,
+        cp.instagram_handle as instagramHandle,
+        cp.total_contact_count as totalContacts,
+        cp.total_email_count as thirtyDayVolume,
+        cp.last_contact_at as lastContactAt,
+        cp.is_high_attention_customer as isHighAttentionCustomer
       FROM tickets t
       INNER JOIN inbound_emails ie ON t.email_id = ie.id
       INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+      LEFT JOIN customer_profiles cp ON ie.from_email = cp.email
       WHERE t.id = ${ticketId}
       LIMIT 1
     `;
@@ -180,7 +187,7 @@ async function getTicket(req, res) {
 // POST /api/tickets/:id/approve - Approve ticket and trigger Make webhook
 // ============================================================================
 
-async function approveTicket(req, res) {
+async function approveTicket(req: any, res: any) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const ticketId = url.pathname.split('/').slice(0, -1).pop();
@@ -273,7 +280,7 @@ async function approveTicket(req, res) {
 // POST /api/tickets/:id/reject - Reject ticket
 // ============================================================================
 
-async function rejectTicket(req, res) {
+async function rejectTicket(req: any, res: any) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const ticketId = url.pathname.split('/').slice(0, -1).pop();
@@ -336,7 +343,7 @@ async function rejectTicket(req, res) {
 // POST /api/tickets/:id/sent - Callback from Make.com on send success
 // ============================================================================
 
-async function markTicketSent(req, res) {
+async function markTicketSent(req: any, res: any) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const ticketId = url.pathname.split('/').slice(0, -1).pop();
@@ -485,7 +492,7 @@ async function markTicketSent(req, res) {
 // POST /api/tickets/:id/failed - Callback from Make.com on send failure
 // ============================================================================
 
-async function markTicketFailed(req, res) {
+async function markTicketFailed(req: any, res: any) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const ticketId = url.pathname.split('/').slice(0, -1).pop();
@@ -545,7 +552,7 @@ async function markTicketFailed(req, res) {
 // ROUTER - Dispatch based on HTTP method and path
 // ============================================================================
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');

@@ -288,7 +288,7 @@ export function ResolutionConsoleMVP({
                 <div className="flex justify-between items-center">
                   <span className="font-body text-xs text-zinc-500 font-medium">Last Contact</span>
                   <span className="font-body text-[13px] font-medium text-zinc-900">
-                    {customer.lastContactAt ? new Date(customer.lastContactAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: '2-digit', timeZone: 'Australia/Sydney' }) : 'Never'}
+                    {customer.lastContactAt ? new Date(customer.lastContactAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : 'Never'}
                   </span>
                 </div>
 
@@ -471,7 +471,7 @@ export function ResolutionConsoleMVP({
                   {message.subject}
                 </h4>
                 <span className="font-label text-[9px] text-zinc-400 mt-1 whitespace-nowrap">
-                  {new Date(ticket.receivedAt).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', timeZone: 'Australia/Sydney' })}
+                  {new Date(ticket.receivedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
               <p className="font-body text-[13px] text-on-surface whitespace-pre-wrap leading-relaxed">
@@ -533,7 +533,7 @@ export function ResolutionConsoleMVP({
               />
             ) : (
               <div
-                className="min-h-[250px] bg-white p-4 rounded-md border border-outline-variant overflow-y-auto font-body text-[14px] text-on-surface leading-relaxed shadow-sm [&_p]:mb-4 [&_p:last-child]:mb-0 [&_blockquote]:border-l-2 [&_blockquote]:border-outline-variant [&_blockquote]:pl-3 [&_blockquote]:text-on-surface-variant [&_blockquote]:mt-4 [&_hr]:my-4 [&_hr]:border-outline-variant"
+                className="min-h-[250px] bg-white p-4 rounded-md border border-outline-variant overflow-y-auto font-body text-[14px] text-on-surface leading-relaxed shadow-sm"
                 dangerouslySetInnerHTML={{ __html: editedResponse || triage.draftResponse || '' }}
               />
             )}

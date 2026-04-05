@@ -9,7 +9,7 @@ export const config = {
   runtime: 'nodejs',
 };
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   if (req.method !== 'GET') {

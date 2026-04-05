@@ -1,26 +1,46 @@
 // src/App.tsx
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { NotificationPill } from "./features/notification-hub/components/NotificationPill";
 import { NotificationHub } from "./features/notification-hub/components/NotificationHub";
 import { useSagitineSync } from "./hooks/useSagitineSync";
-import { transformApiToHubData } from "./lib/data-transformer";
+import { transformApiToHubData, transformApiToConsoleData, transformApiToMvpConsoleData } from "./lib/data-transformer";
 import type { ApiDashboardResponse } from "./lib/data-transformer";
-import type { HubView } from "./features/notification-hub/types";
+import type { HubView, ResolutionConsoleData } from "./features/notification-hub/types";
 
 function App() {
   const pillRef = useRef<HTMLButtonElement>(null);
   const [isHubOpen, setIsHubOpen] = useState(false);
   const [currentView, setCurrentView] = useState<HubView>("LEVEL_1_HUB");
+  // Check UI mode explicitly as used in NotificationHub
+  const UI_MODE = import.meta.env.VITE_UI_MODE || 'mvp';
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [consoleDataMap, setConsoleDataMap] = useState<Record<string, ResolutionConsoleData>>({});
 
   // Fetch full dashboard data (queue + categories + metrics)
   const { data: apiData, loading, error } = useSagitineSync<ApiDashboardResponse>('/api/hub-dashboard', {
     pollingIntervalMs: 10000,
     enabled: true,
   });
+
+  // Fetch individual ticket payload when traversing deep dive screens
+  useEffect(() => {
+    if (activeTicketId && !consoleDataMap[activeTicketId]) {
+      fetch(`/api/tickets/${activeTicketId}`)
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && json.data) {
+            const transformed = UI_MODE === 'mvp' 
+              ? transformApiToMvpConsoleData(json.data) 
+              : transformApiToConsoleData(json.data);
+            setConsoleDataMap(prev => ({ ...prev, [activeTicketId]: transformed as any }));
+          }
+        })
+        .catch(err => console.error("Failed to deeply hydrate ticket:", err));
+    }
+  }, [activeTicketId, consoleDataMap]);
 
   // Transform API response into UI format (use mock data as fallback)
   const activeHubData = apiData ? transformApiToHubData(apiData) : null;
@@ -180,7 +200,7 @@ function App() {
             categories={activeHubData.categories}
             metrics={activeHubData.metrics}
             queueByCategory={activeHubData.queueByCategory}
-            consoleByTicketId={activeHubData.consoleByTicketId}
+            consoleByTicketId={{ ...activeHubData.consoleByTicketId, ...consoleDataMap }}
             activeCategoryId={activeCategoryId}
             activeTicketId={activeTicketId}
             isExpanded={isExpanded}

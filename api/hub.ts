@@ -109,7 +109,7 @@ type ProofResponse = {
 // GET /api/hub/ticket/:ticketId - Full Resolution Console Hydration
 // ============================================================================
 
-async function getTicketHydration(req, res) {
+async function getTicketHydration(req: any, res: any) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const ticketId = url.pathname.split('/').pop();
@@ -365,7 +365,7 @@ async function getTicketHydration(req, res) {
 // GET /api/hub/queue/:category - Ticket Queue by Category
 // ============================================================================
 
-async function getQueueByCategory(req, res) {
+async function getQueueByCategory(req: any, res: any) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const category = url.pathname.split('/').pop();
@@ -446,7 +446,7 @@ async function getQueueByCategory(req, res) {
 // GET /api/hub/categories - Category Breakdown with Counts
 // ============================================================================
 
-async function getCategories(req, res) {
+async function getCategories(req: any, res: any) {
   try {
     // Get ticket counts by category (only categories with tickets)
     const categoryCounts = await db
@@ -528,7 +528,7 @@ async function getCategories(req, res) {
  * This logic ensures the HUD reflects real operational tension and
  * should remain consistent across frontend and analytics implementations.
  */
-async function getHubMetrics(req, res) {
+async function getHubMetrics(req: any, res: any) {
   try {
     // Get total open tickets
     const [totalOpen] = await db
@@ -615,7 +615,7 @@ async function getHubMetrics(req, res) {
  * Returns structured corrections and suggestions
  * NOW INCLUDES: Sagitine TOV compliance checks
  */
-async function proofTicketDraft(req, res) {
+async function proofTicketDraft(req: any, res: any) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const ticketId = url.pathname.split('/').slice(0, -1).pop();
@@ -820,7 +820,7 @@ Return strict JSON only:
  * Action: Marks ticket as 'archived' with optional reason
  * Result: Ticket disappears from all HUD views (metrics, categories, queue)
  */
-async function resolveTicketManually(req, res) {
+async function resolveTicketManually(req: any, res: any) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const ticketId = url.pathname.split('/').slice(0, -1).pop();
@@ -880,7 +880,7 @@ async function resolveTicketManually(req, res) {
 // ROUTER - Dispatch based on HTTP method and path
 // ============================================================================
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
