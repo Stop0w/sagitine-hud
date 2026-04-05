@@ -7,24 +7,24 @@ interface CategoryListMVPProps {
   onCategoryClick?: (id: string) => void;
 }
 
-// Group definitions
+// Group definitions — keys must match DB enum values written by classify.ts
 const GROUPS = [
   {
     title: 'Orders & Delivery',
-    keys: ['shipping_delivery_order_issue', 'return_refund_exchange', 'order_modification_cancellation', 'account_billing_payment'],
+    keys: ['shipping_delivery', 'returns'],
   },
   {
     title: 'Product & Usage',
-    keys: ['damaged_missing_faulty', 'product_usage_guidance', 'stock_availability'],
+    keys: ['damaged_missing_faulty', 'product_usage', 'stock'],
   },
   {
     title: 'Sales & General Enquiries',
-    keys: ['pre_purchase_question', 'brand_feedback_general', 'partnership_wholesale_press', 'praise_testimonial_ugc'],
+    keys: ['pre_purchase', 'brand_feedback', 'partnerships'],
   },
   {
     title: 'Exceptions & Control',
-    keys: ['spam_solicitation', 'other_uncategorized'],
-  }
+    keys: ['spam'],
+  },
 ];
 
 export function CategoryListMVP({ items, onCategoryClick }: CategoryListMVPProps) {
