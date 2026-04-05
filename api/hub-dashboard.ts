@@ -8,21 +8,25 @@ export const config = {
 
 const CATEGORY_LABELS: Record<string, string> = {
   damaged_missing_faulty: 'Damaged & Faulty',
-  shipping_delivery:      'Shipping & Delivery',
-  product_usage:          'Product Usage',
-  pre_purchase:           'Pre-Purchase',
-  returns:                'Returns & Exchanges',
-  stock:                  'Stock Availability',
-  partnerships:           'Partnerships & Press',
-  brand_feedback:         'Brand Feedback',
-  spam:                   'Spam & Solicitation',
+  shipping_delivery_order_issue: 'Shipping & Delivery',
+  product_usage_guidance: 'Product Usage',
+  pre_purchase_question: 'Pre-Purchase',
+  return_refund_exchange: 'Return & Refund',
+  stock_availability: 'Stock Availability',
+  partnership_wholesale_press: 'Partnership & Press',
+  brand_feedback_general: 'Brand Feedback',
+  spam_solicitation: 'Spam & Solicitation',
+  other_uncategorized: 'Other',
+  account_billing_payment: 'Account & Billing',
+  order_modification_cancellation: 'Order Modification',
+  praise_testimonial_ugc: 'Praise & Feedback',
 };
 
 function getCategoryLabel(categoryEnum: string): string {
   return CATEGORY_LABELS[categoryEnum] || categoryEnum;
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
