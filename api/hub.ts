@@ -1,9 +1,5 @@
 // Hub API endpoints for Sagitine AI CX Agent
 // Progressive hydration model for Notification HUD + Resolution Console
-import { db } from '../src/db';
-import { tickets, inboundEmails, triageResults, customerProfiles, customerContactFacts, draftProofs, sendAudit } from '../src/db/schema';
-import { responseStrategies } from '../src/db/schema/gold-responses';
-import { eq, desc, and, gte, sql, ne } from 'drizzle-orm';
 import Anthropic from '@anthropic-ai/sdk';
 import { neon } from '@neondatabase/serverless';
 import { generateResponseStrategy } from '../services/response-strategy';
@@ -124,56 +120,28 @@ async function getTicketHydration(req: any, res: any) {
     }
 
     // Fetch ticket, email, triage_result, and customer_profile in one query
-    const [ticketData] = await db
-      .select({
-        // Ticket fields
-        ticket_id: tickets.id,
-        ticket_status: tickets.status,
-        send_status: tickets.sendStatus,
-        approved_at: tickets.approvedAt,
-        sent_at: tickets.sentAt,
-        human_edited: tickets.humanEdited,
-        human_edited_body: tickets.humanEditedBody,
-
-        // Email fields
-        email_id: inboundEmails.id,
-        from_email: inboundEmails.fromEmail,
-        from_name: inboundEmails.fromName,
-        subject: inboundEmails.subject,
-        body_plain: inboundEmails.bodyPlain,
-        body_html: inboundEmails.bodyHtml,
-        received_at: inboundEmails.receivedAt,
-
-        // Triage result fields
-        triage_id: triageResults.id,
-        category_primary: triageResults.categoryPrimary,
-        confidence: triageResults.confidence,
-        urgency: triageResults.urgency,
-        risk_level: triageResults.riskLevel,
-        customer_intent_summary: triageResults.customerIntentSummary,
-        recommended_next_action: triageResults.recommendedNextAction,
-        reply_subject: triageResults.replySubject,
-        reply_body: triageResults.replyBody,
-
-        // Customer profile fields
-        customer_id: customerProfiles.id,
-        customer_email: customerProfiles.email,
-        customer_name: customerProfiles.name,
-        first_contact_at: customerProfiles.firstContactAt,
-        last_contact_at: customerProfiles.lastContactAt,
-        last_contact_channel: customerProfiles.lastContactChannel,
-        total_contact_count: customerProfiles.totalContactCount,
-        is_repeat_contact: customerProfiles.isRepeatContact,
-        is_high_attention_customer: customerProfiles.isHighAttentionCustomer,
-        shopify_order_count: customerProfiles.shopifyOrderCount,
-        shopify_ltv: customerProfiles.shopifyLtv,
-      })
-      .from(tickets)
-      .innerJoin(inboundEmails, eq(tickets.emailId, inboundEmails.id))
-      .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
-      .leftJoin(customerProfiles, eq(inboundEmails.fromEmail, customerProfiles.email))
-      .where(eq(tickets.id, ticketId))
-      .limit(1);
+    const sqlQuery = neon(process.env.DATABASE_URL!);
+    const ticketDataRaw = await sqlQuery`
+      SELECT 
+        t.id as ticket_id, t.status as ticket_status, t.send_status,
+        t.approved_at, t.sent_at, t.human_edited, t.human_edited_body,
+        ie.id as email_id, ie.from_email, ie.from_name, ie.subject,
+        ie.body_plain, ie.body_html, ie.received_at,
+        tr.id as triage_id, tr.category_primary, tr.confidence, tr.urgency,
+        tr.risk_level, tr.customer_intent_summary, tr.recommended_next_action,
+        tr.reply_subject, tr.reply_body,
+        cp.id as customer_id, cp.email as customer_email, cp.name as customer_name,
+        cp.first_contact_at, cp.last_contact_at, cp.last_contact_channel,
+        cp.total_contact_count, cp.is_repeat_contact, 
+        cp.is_high_attention_customer, cp.shopify_order_count, cp.shopify_ltv
+      FROM tickets t
+      INNER JOIN inbound_emails ie ON t.email_id = ie.id
+      INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+      LEFT JOIN customer_profiles cp ON ie.from_email = cp.email
+      WHERE t.id = ${ticketId}
+      LIMIT 1
+    `;
+    const ticketData = ticketDataRaw[0];
 
     if (!ticketData || ticketData.length === 0) {
       return res.status(404).json({
@@ -189,16 +157,14 @@ async function getTicketHydration(req: any, res: any) {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const [volumeResult] = await db
-        .select({ count: sql<number>`COUNT(*)` })
-        .from(customerContactFacts)
-        .where(
-          and(
-            eq(customerContactFacts.customerProfileId, ticketData.customer_id!),
-            eq(customerContactFacts.direction, 'inbound'),
-            gte(customerContactFacts.contactAt, thirtyDaysAgo.toISOString())
-          )
-        );
+      const volumeRaw = await sqlQuery`
+        SELECT COUNT(*) as count 
+        FROM customer_contact_facts 
+        WHERE customer_profile_id = ${ticketData.customer_id}
+          AND direction = 'inbound'
+          AND contact_at >= ${thirtyDaysAgo.toISOString()}
+      `;
+      const volumeResult = volumeRaw[0];
 
       thirtyDayVolume = volumeResult?.count || 0;
     }
@@ -211,23 +177,20 @@ async function getTicketHydration(req: any, res: any) {
     // Get lastContactCategory (previous ticket category for this customer)
     let lastContactCategory = null;
     if (ticketData.from_email) {
-      const [previousTicket] = await db
-        .select({
-          category: triageResults.categoryPrimary,
-          receivedAt: inboundEmails.receivedAt,
-        })
-        .from(tickets)
-        .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
-        .innerJoin(inboundEmails, eq(tickets.emailId, inboundEmails.id))
-        .where(
-          and(
-            eq(inboundEmails.fromEmail, ticketData.from_email),
-            ne(tickets.id, ticketId), // Exclude current ticket
-            sql`${tickets.status} NOT IN ('rejected', 'archived')`
-          )
-        )
-        .orderBy(desc(inboundEmails.receivedAt))
-        .limit(1);
+      const previousRaw = await sqlQuery`
+        SELECT 
+          tr.category_primary as category,
+          ie.received_at as "receivedAt"
+        FROM tickets t
+        INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+        INNER JOIN inbound_emails ie ON t.email_id = ie.id
+        WHERE ie.from_email = ${ticketData.from_email}
+          AND t.id != ${ticketId}
+          AND t.status NOT IN ('rejected', 'archived')
+        ORDER BY ie.received_at DESC
+        LIMIT 1
+      `;
+      const previousTicket = previousRaw[0];
 
       if (previousTicket) {
         lastContactCategory = getCategoryLabel(previousTicket.category);
@@ -255,30 +218,27 @@ async function getTicketHydration(req: any, res: any) {
 
     // Load response strategy if exists
     let strategy = null;
-    const [strategyRecord] = await db
-      .select({
-        summary: responseStrategies.summary,
-        recommendedAction: responseStrategies.recommendedAction,
-        actionType: responseStrategies.actionType,
-        matchedTemplateId: responseStrategies.matchedTemplateId,
-        matchedTemplateLabel: sql<string>`(
-          SELECT title FROM gold_responses
-          WHERE id = ${responseStrategies.matchedTemplateId}
-        )`,
-        matchedTemplateConfidence: responseStrategies.matchedTemplateConfidence,
-        drivers: responseStrategies.drivers,
-        rationale: responseStrategies.rationale,
-        draftTone: responseStrategies.draftTone,
-        mustInclude: responseStrategies.mustInclude,
-        mustAvoid: responseStrategies.mustAvoid,
-        customerContext: responseStrategies.customerContext,
-        // Management escalation guardrail (pre-launch safety)
-        requiresManagementApproval: responseStrategies.requiresManagementApproval,
-        managementEscalationReason: responseStrategies.managementEscalationReason,
-      })
-      .from(responseStrategies)
-      .where(eq(responseStrategies.ticketId, ticketId))
-      .limit(1);
+    const strategyRaw = await sqlQuery`
+      SELECT 
+        rs.summary,
+        rs.recommended_action as "recommendedAction",
+        rs.action_type as "actionType",
+        rs.matched_template_id as "matchedTemplateId",
+        (SELECT title FROM gold_responses WHERE id = rs.matched_template_id) as "matchedTemplateLabel",
+        rs.matched_template_confidence as "matchedTemplateConfidence",
+        rs.drivers,
+        rs.rationale,
+        rs.draft_tone as "draftTone",
+        rs.must_include as "mustInclude",
+        rs.must_avoid as "mustAvoid",
+        rs.customer_context as "customerContext",
+        rs.requires_management_approval as "requiresManagementApproval",
+        rs.management_escalation_reason as "managementEscalationReason"
+      FROM response_strategies rs
+      WHERE rs.ticket_id = ${ticketId}
+      LIMIT 1
+    `;
+    const strategyRecord = strategyRaw[0];
 
     if (strategyRecord) {
       strategy = {
@@ -363,578 +323,9 @@ async function getTicketHydration(req: any, res: any) {
 }
 
 // ============================================================================
-// GET /api/hub/queue/:category - Ticket Queue by Category
-// ============================================================================
 
-async function getQueueByCategory(req: any, res: any) {
-  try {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const category = url.pathname.split('/').pop();
-
-    if (!category) {
-      return res.status(400).json({
-        success: false,
-        error: 'Category is required',
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    const limit = url.searchParams.get('limit') || '50';
-
-    // Operational priority sorting: urgency DESC, risk_level (high>medium>low), receivedAt ASC (FCFS)
-    const riskOrder = sql`
-      CASE risk_level
-        WHEN 'high' THEN 1
-        WHEN 'medium' THEN 2
-        WHEN 'low' THEN 3
-        ELSE 4
-      END
-    `;
-
-    const tickets = await db
-      .select({
-        id: tickets.id,
-        status: tickets.status,
-        sendStatus: tickets.sendStatus,
-        fromEmail: inboundEmails.fromEmail,
-        fromName: inboundEmails.fromName,
-        subject: inboundEmails.subject,
-        category: triageResults.categoryPrimary,
-        confidence: triageResults.confidence,
-        urgency: triageResults.urgency,
-        riskLevel: triageResults.riskLevel,
-        receivedAt: inboundEmails.receivedAt,
-        createdAt: tickets.createdAt,
-      })
-      .from(tickets)
-      .innerJoin(inboundEmails, eq(tickets.emailId, inboundEmails.id))
-      .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
-      .where(
-        and(
-          eq(triageResults.categoryPrimary, category),
-          HUD_VISIBLE_CONDITION // Exclude archived, rejected, sent
-        )
-      )
-      .orderBy(desc(triageResults.urgency))
-      .orderBy(riskOrder)
-      .orderBy(inboundEmails.receivedAt)
-      .limit(parseInt(limit, 10));
-
-    // Add category labels and previews
-    const enriched = tickets.map(t => ({
-      ...t,
-      categoryLabel: getCategoryLabel(t.category),
-      preview: t.subject?.substring(0, 150) || '',
-    }));
-
-    return res.status(200).json({
-      success: true,
-      data: enriched,
-      count: enriched.length,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    console.error('GET /api/hub/queue/:category error:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Unknown error',
-      timestamp: new Date().toISOString(),
-    });
-  }
-}
-
-// ============================================================================
-// GET /api/hub/categories - Category Breakdown with Counts
-// ============================================================================
-
-async function getCategories(req: any, res: any) {
-  try {
-    // Get ticket counts by category (only categories with tickets)
-    const categoryCounts = await db
-      .select({
-        category: triageResults.categoryPrimary,
-        count: sql<number>`COUNT(*)`.as('count'),
-        avgUrgency: sql<number>`AVG(${triageResults.urgency})`.as('avg_urgency'),
-        avgConfidence: sql<number>`AVG(${triageResults.confidence})`.as('avg_confidence'),
-      })
-      .from(tickets)
-      .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
-      .where(HUD_VISIBLE_CONDITION) // Exclude archived, rejected, sent
-      .groupBy(triageResults.categoryPrimary);
-
-    // Build map of existing categories
-    const categoryMap = new Map<string, any>();
-    for (const c of categoryCounts) {
-      categoryMap.set(c.category, c);
-    }
-
-    // Build complete category breakdown (all 13 categories for contract stability)
-    const allCategories = Object.keys(CATEGORY_LABELS).map(categoryEnum => {
-      const existing = categoryMap.get(categoryEnum);
-
-      // Determine urgency level from avg urgency (or default to 'low' if no tickets)
-      let urgency = 'low';
-      const avgUrgency = existing?.avgUrgency || 0;
-      if (avgUrgency >= 7) urgency = 'high';
-      else if (avgUrgency >= 4) urgency = 'medium';
-
-      return {
-        category: categoryEnum,
-        categoryLabel: getCategoryLabel(categoryEnum),
-        count: existing ? Number(existing.count) : 0,
-        urgency,
-        avgConfidence: existing ? Number(existing.avgConfidence) : 0,
-      };
-    });
-
-    return res.status(200).json({
-      success: true,
-      data: allCategories,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    console.error('GET /api/hub/categories error:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Unknown error',
-      timestamp: new Date().toISOString(),
-    });
-  }
-}
-
-// ============================================================================
-// GET /api/hub/metrics - Top-level Hub Metrics
-// ============================================================================
-
-/**
- * CRITICALITY THRESHOLD LOGIC
- *
- * The criticality level is calculated as:
- *
- * 1. Calculate urgent ratio:
- *    urgent_ratio = urgentCount / totalOpen
- *
- * 2. Determine criticality:
- *    - CRITICAL:   urgent_ratio > 0.3 (more than 30% urgent)
- *    - ELEVATED:   urgent_ratio > 0.15 (more than 15% urgent)
- *    - NOMINAL:    urgent_ratio <= 0.15 (15% or less urgent)
- *
- * 3. Definition of "urgent":
- *    - urgency >= 7 (high urgency score)
- *    OR
- *    - risk_level = 'high'
- *    AND
- *    - status NOT IN ('sent', 'archived')
- *
- * This logic ensures the HUD reflects real operational tension and
- * should remain consistent across frontend and analytics implementations.
- */
-async function getHubMetrics(req: any, res: any) {
-  try {
-    // Get total open tickets
-    const [totalOpen] = await db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(tickets)
-      .where(HUD_VISIBLE_CONDITION);
-
-    // Get urgent count (urgency >= 7 or high risk)
-    const [urgentCount] = await db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(tickets)
-      .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
-      .where(
-        and(
-          HUD_VISIBLE_CONDITION, // Exclude archived, rejected, sent
-          sql`(urgency >= 7 OR risk_level = 'high')`
-        )
-      );
-
-    // Calculate criticality level
-    let criticality = 'NOMINAL';
-    const urgentRatio = Number(urgentCount.count) / Number(totalOpen.count);
-    if (urgentRatio > 0.3) criticality = 'CRITICAL';
-    else if (urgentRatio > 0.15) criticality = 'ELEVATED';
-
-    // Calculate average response time (from received to approved/sent)
-    // Only for successfully sent tickets for accurate metrics
-    const responseTimes = await db
-      .select({
-        receivedAt: inboundEmails.receivedAt,
-        approvedAt: tickets.approvedAt,
-        sentAt: tickets.sentAt,
-      })
-      .from(tickets)
-      .innerJoin(inboundEmails, eq(tickets.emailId, inboundEmails.id))
-      .where(
-        and(
-          sql`tickets.send_status = 'sent'`, // Only sent tickets for response time calculation
-          sql`tickets.approved_at IS NOT NULL`
-        )
-      );
-
-    let avgResponseTimeMinutes = 0;
-    if (responseTimes.length > 0) {
-      const responseTimeArray = responseTimes.map(rt => {
-        const timestamp = rt.sentAt || rt.approvedAt;
-        const diffMs = new Date(timestamp).getTime() - new Date(rt.receivedAt).getTime();
-        return Math.floor(diffMs / 60000);
-      });
-      const sum = responseTimeArray.reduce((a, b) => a + b, 0);
-      avgResponseTimeMinutes = Math.floor(sum / responseTimeArray.length);
-    }
-
-    const payload = {
-      totalOpen: Number(totalOpen.count),
-      urgentCount: Number(urgentCount.count),
-      avgResponseTimeMinutes,
-      criticality,
-    };
-
-    return res.status(200).json({
-      success: true,
-      data: payload,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    console.error('GET /api/hub/metrics error:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Unknown error',
-      timestamp: new Date().toISOString(),
-    });
-  }
-}
-
-// ============================================================================
-// POST /api/hub/ticket/:id/proof - Real Draft Proofing with Claude Haiku
-// ============================================================================
-
-/**
- * Proof endpoint using Claude Haiku for editorial review
- *
- * Analyses current draft text (not just original AI-generated)
- * Returns structured corrections and suggestions
- * NOW INCLUDES: Sagitine TOV compliance checks
- */
-async function proofTicketDraft(req: any, res: any) {
-  try {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const ticketId = url.pathname.split('/').slice(0, -1).pop();
-
-    if (!ticketId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Ticket ID is required',
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    const { draftText, operatorEdited } = req.body || {};
-
-    if (!draftText) {
-      return res.status(400).json({
-        success: false,
-        error: 'draftText is required',
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // Load ticket context
-    const [ticketData] = await db
-      .select({
-        ticket_id: tickets.id,
-        category_primary: triageResults.categoryPrimary,
-        customer_intent_summary: triageResults.customerIntentSummary,
-        from_email: inboundEmails.fromEmail,
-        subject: inboundEmails.subject,
-        original_body: inboundEmails.bodyPlain,
-      })
-      .from(tickets)
-      .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
-      .innerJoin(inboundEmails, eq(tickets.emailId, inboundEmails.id))
-      .where(eq(tickets.id, ticketId))
-      .limit(1);
-
-    if (!ticketData) {
-      return res.status(404).json({
-        success: false,
-        error: 'Ticket not found',
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // Build TOV-aware proofing prompt for Claude Haiku
-    const proofPrompt = `You are an editorial proofreader for Sagitine customer service responses.
-
-CONTEXT:
-- Customer inquiry: ${ticketData.customer_intent_summary?.substring(0, 200)}
-- Original subject: ${ticketData.subject}
-
-CURRENT DRAFT TO PROOF:
-${draftText}
-
-${generateTOVProofingChecklist()}
-
-Return strict JSON only:
-{
-  "correctedDraft": "proofed version with minimal changes",
-  "changesDetected": true/false,
-  "suggestions": [
-    {
-      "type": "grammar|tone|clarity|spelling|risk|duplication|terminology|sign_off|casual",
-      "severity": "low|medium|high",
-      "message": "brief explanation"
-    }
-  ],
-  "summary": {
-    "tone": "pass|fixes_applied|warning",
-    "grammar": "pass|fixes_applied|warning",
-    "clarity": "pass|fixes_applied|warning",
-    "risk": "low|medium|high",
-    "brandCompliance": "pass|fixes_applied|warning"
-  }
-}`;
-
-    try {
-      // Call Claude Haiku
-      const response = await anthropic.messages.create({
-        model: 'claude-3-5-haiku-20241022',
-        max_tokens: 2000,
-        temperature: 0.2, // Low temperature for consistent proofing
-        messages: [
-          {
-            role: 'user',
-            content: proofPrompt,
-          },
-        ],
-      });
-
-      // Extract JSON response
-      const content = response.content[0];
-      if (content.type !== 'text') {
-        throw new Error('Unexpected response type from Claude');
-      }
-
-      const jsonMatch = content.text.match(/```json\s*([\s\S]*?)\s*```/) || content.text.match(/({[\s\S]*})/);
-      if (!jsonMatch) {
-        throw new Error('No JSON found in Claude response');
-      }
-
-      const proofResult = JSON.parse(jsonMatch[1] || jsonMatch[0]);
-
-      // Apply deterministic TOV cleanup to corrected draft
-      const cleanedDraft = applySagitoneTOVCleanup(proofResult.correctedDraft);
-
-      // Assess brand compliance
-      const brandCompliance = assessBrandCompliance(proofResult.suggestions || []);
-
-      // Persist proof audit with TOV-enhanced data
-      const sqlQuery = neon(process.env.DATABASE_URL!);
-      const proofRecordRaw = await sqlQuery`
-        INSERT INTO draft_proofs (
-          ticket_id,
-          input_draft,
-          corrected_draft,
-          changes_detected,
-          suggestions,
-          proof_status,
-          operator_edited,
-          proof_model
-        ) VALUES (
-          ${ticketId},
-          ${draftText},
-          ${cleanedDraft},
-          ${proofResult.changesDetected},
-          ${JSON.stringify(proofResult.suggestions || [])}::jsonb,
-          ${brandCompliance === 'warning' ? 'warning' : 'proofed'},
-          ${Boolean(operatorEdited)},
-          'claude-haiku'
-        )
-        RETURNING *
-      `;
-      const proofRecord = proofRecordRaw[0];
-
-      // Build response with brand compliance field
-      const responseData: ProofResponse = {
-        proofStatus: proofRecord.proofStatus as 'proofed' | 'warning',
-        changesDetected: proofResult.changesDetected,
-        correctedDraft: cleanedDraft,
-        suggestions: proofResult.suggestions,
-        summary: {
-          ...proofResult.summary,
-          brandCompliance, // NEW: Brand compliance assessment
-        },
-        proofedAt: proofRecord.proofedAt.toISOString(),
-      };
-
-      return res.status(200).json({
-        success: true,
-        data: responseData,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (claudeError) {
-      console.error('Claude Haiku proofing error:', claudeError);
-
-      // Fallback: Return safe response with no corrections
-      const cleanedFallback = applySagitoneTOVCleanup(draftText);
-
-      const sqlQuery = neon(process.env.DATABASE_URL!);
-      const fallbackProof = await sqlQuery`
-        INSERT INTO draft_proofs (
-          ticket_id,
-          input_draft,
-          corrected_draft,
-          changes_detected,
-          suggestions,
-          proof_status,
-          operator_edited,
-          proof_model
-        ) VALUES (
-          ${ticketId},
-          ${draftText},
-          ${cleanedFallback},
-          ${false},
-          ${JSON.stringify([])}::jsonb,
-          'proofed',
-          ${Boolean(operatorEdited)},
-          'claude-haiku'
-        )
-        RETURNING *
-      `;
-
-      return res.status(200).json({
-        success: true,
-        data: {
-          proofStatus: 'proofed',
-          changesDetected: false,
-          correctedDraft: cleanedFallback,
-          suggestions: [],
-          summary: {
-            tone: 'pass',
-            grammar: 'pass',
-            clarity: 'pass',
-            risk: 'low',
-            brandCompliance: 'pass', // NEW: Always pass on fallback
-          },
-          proofedAt: fallbackProof[0].proofedAt.toISOString(),
-        },
-        timestamp: new Date().toISOString(),
-      });
-    }
-  } catch (error: any) {
-    console.error('POST /api/hub/ticket/:id/proof error:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Unknown error',
-      timestamp: new Date().toISOString(),
-    });
-  }
-}
-
-// ============================================================================
-// POST /api/hub/ticket/:id/resolve - Manual Resolution (Handled in Outlook)
-// ============================================================================
-
-/**
- * Manual resolution endpoint for tickets handled outside the system
- * Use case: Agent handles enquiry manually in Outlook, needs to remove from HUD
- *
- * Action: Marks ticket as 'archived' with optional reason
- * Result: Ticket disappears from all HUD views (metrics, categories, queue)
- */
-async function resolveTicketManually(req: any, res: any) {
-  try {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const ticketId = url.pathname.split('/').slice(0, -1).pop();
-
-    if (!ticketId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Ticket ID is required',
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    const body = req.body || {};
-    const resolvedBy = body.resolved_by || 'Heidi';
-    const resolutionReason = body.resolution_reason || 'Handled manually in Outlook';
-
-    // Mark ticket as archived (removes from HUD)
-    const [updated] = await db
-      .update(tickets)
-      .set({
-        status: 'archived',
-        archivedAt: new Date(),
-        rejectionReason: resolutionReason,
-      })
-      .where(eq(tickets.id, ticketId))
-      .returning();
-
-    if (!updated) {
-      return res.status(404).json({
-        success: false,
-        error: 'Ticket not found',
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: {
-        id: updated.id,
-        status: updated.status,
-        archivedAt: updated.archivedAt,
-        message: 'Ticket marked as resolved and removed from HUD',
-      },
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    console.error('POST /api/hub/ticket/:id/resolve error:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Unknown error',
-      timestamp: new Date().toISOString(),
-    });
-  }
-}
-
-// ============================================================================
-// ROUTER - Dispatch based on HTTP method and path
-// ============================================================================
-
-export default async function handler(req: any, res: any) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const pathname = url.pathname;
-
-  // GET /api/hub/ticket/:id - Full ticket hydration
-  if (req.method === 'GET' && pathname.match(/^\/api\/hub\/ticket\/[^/]+$/)) {
-    return getTicketHydration(req, res);
-  }
-
-  // GET /api/hub/queue/:category - Queue by category
-  if (req.method === 'GET' && pathname.match(/^\/api\/hub\/queue\/[^/]+$/)) {
-    return getQueueByCategory(req, res);
-  }
-
-  // GET /api/hub/categories - Category breakdown
-  if (req.method === 'GET' && pathname === '/api/hub/categories') {
-    return getCategories(req, res);
-  }
-
-  // GET /api/hub/metrics - Top-level metrics
-  if (req.method === 'GET' && pathname === '/api/hub/metrics') {
-    return getHubMetrics(req, res);
-  }
-
+  
+  
   // POST /api/hub/proof - Draft safety check (legacy endpoint, redirects to ticket proof)
   if (req.method === 'POST' && pathname === '/api/hub/proof') {
     return proofTicketDraft(req, res);
