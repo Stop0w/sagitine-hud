@@ -5,6 +5,7 @@ import { tickets, inboundEmails, triageResults, customerProfiles, customerContac
 import { responseStrategies } from '../src/db/schema/gold-responses';
 import { eq, desc, and, gte, sql, ne } from 'drizzle-orm';
 import Anthropic from '@anthropic-ai/sdk';
+import { neon } from '@neondatabase/serverless';
 import { generateResponseStrategy } from '../services/response-strategy';
 import {
   generateTOVProofingChecklist,
@@ -728,19 +729,30 @@ Return strict JSON only:
       const brandCompliance = assessBrandCompliance(proofResult.suggestions || []);
 
       // Persist proof audit with TOV-enhanced data
-      const [proofRecord] = await db
-        .insert(draftProofs)
-        .values({
-          ticketId,
-          inputDraft: draftText,
-          correctedDraft: cleanedDraft,
-          changesDetected: proofResult.changesDetected,
-          suggestions: proofResult.suggestions,
-          proofStatus: brandCompliance === 'warning' ? 'warning' : 'proofed',
-          operatorEdited: Boolean(operatorEdited),
-          proofModel: 'claude-haiku',
-        })
-        .returning();
+      const sqlQuery = neon(process.env.DATABASE_URL!);
+      const proofRecordRaw = await sqlQuery`
+        INSERT INTO draft_proofs (
+          ticket_id,
+          input_draft,
+          corrected_draft,
+          changes_detected,
+          suggestions,
+          proof_status,
+          operator_edited,
+          proof_model
+        ) VALUES (
+          ${ticketId},
+          ${draftText},
+          ${cleanedDraft},
+          ${proofResult.changesDetected},
+          ${JSON.stringify(proofResult.suggestions || [])}::jsonb,
+          ${brandCompliance === 'warning' ? 'warning' : 'proofed'},
+          ${Boolean(operatorEdited)},
+          'claude-haiku'
+        )
+        RETURNING *
+      `;
+      const proofRecord = proofRecordRaw[0];
 
       // Build response with brand compliance field
       const responseData: ProofResponse = {
@@ -766,19 +778,29 @@ Return strict JSON only:
       // Fallback: Return safe response with no corrections
       const cleanedFallback = applySagitoneTOVCleanup(draftText);
 
-      const fallbackProof = await db
-        .insert(draftProofs)
-        .values({
-          ticketId,
-          inputDraft: draftText,
-          correctedDraft: cleanedFallback,
-          changesDetected: false,
-          suggestions: [],
-          proofStatus: 'proofed',
-          operatorEdited: Boolean(operatorEdited),
-          proofModel: 'claude-haiku',
-        })
-        .returning();
+      const sqlQuery = neon(process.env.DATABASE_URL!);
+      const fallbackProof = await sqlQuery`
+        INSERT INTO draft_proofs (
+          ticket_id,
+          input_draft,
+          corrected_draft,
+          changes_detected,
+          suggestions,
+          proof_status,
+          operator_edited,
+          proof_model
+        ) VALUES (
+          ${ticketId},
+          ${draftText},
+          ${cleanedFallback},
+          ${false},
+          ${JSON.stringify([])}::jsonb,
+          'proofed',
+          ${Boolean(operatorEdited)},
+          'claude-haiku'
+        )
+        RETURNING *
+      `;
 
       return res.status(200).json({
         success: true,

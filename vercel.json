@@ -5,7 +5,7 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/api/tickets/:path*", "destination": "/api/tickets" },
-    { "source": "/api/hub/:path*", "destination": "/api/hub" },
+    { "source": "/api/hub/(.*)", "destination": "/api/hub" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
