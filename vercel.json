@@ -4,9 +4,9 @@
   "installCommand": "npm install",
   "framework": "vite",
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    }
+    { "source": "/api/tickets/:path*", "destination": "/api/tickets" },
+    { "source": "/api/hub/:path*", "destination": "/api/hub" },
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

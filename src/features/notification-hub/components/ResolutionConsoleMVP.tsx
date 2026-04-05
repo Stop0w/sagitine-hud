@@ -533,7 +533,7 @@ export function ResolutionConsoleMVP({
               />
             ) : (
               <div
-                className="min-h-[250px] bg-white p-4 rounded-md border border-outline-variant overflow-y-auto font-body text-[14px] text-on-surface leading-relaxed shadow-sm"
+                className="prose prose-sm max-w-none [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:text-gray-600 [&_hr]:my-4 [&_p]:mb-3"
                 dangerouslySetInnerHTML={{ __html: editedResponse || triage.draftResponse || '' }}
               />
             )}
