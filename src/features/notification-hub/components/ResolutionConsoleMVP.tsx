@@ -532,9 +532,10 @@ export function ResolutionConsoleMVP({
                 className="w-full h-[300px] p-4 bg-white border border-tertiary/40 rounded-md font-body text-[14px] text-on-surface leading-relaxed focus:outline-none focus:ring-2 focus:ring-tertiary/70 focus:border-transparent resize-none shadow-sm"
               />
             ) : (
-              <div className="min-h-[250px] bg-white p-4 rounded-md border border-outline-variant overflow-y-auto font-body text-[14px] text-on-surface whitespace-pre-wrap leading-relaxed shadow-sm">
-                {editedResponse || triage.draftResponse}
-              </div>
+              <div
+                className="min-h-[250px] bg-white p-4 rounded-md border border-outline-variant overflow-y-auto font-body text-[14px] text-on-surface leading-relaxed shadow-sm"
+                dangerouslySetInnerHTML={{ __html: editedResponse || triage.draftResponse || '' }}
+              />
             )}
 
             {/* Backend Data-Driven Proofing Results */}
@@ -644,9 +645,9 @@ export function ResolutionConsoleMVP({
               </button>
               <button
                 onClick={handleActionClick}
-                disabled={proofState === 'proofing' || proofState === 'sending' || (editedResponse.trim().length === 0) || (proofState === 'proofed' && requiresApproval) || (proofState === 'proofed' && !correctionsApplied)}
+                disabled={proofState === 'proofing' || proofState === 'sending' || (editedResponse.trim().length === 0) || (proofState === 'proofed' && requiresApproval)}
                 className={`flex-1 px-4 py-2.5 transition-all duration-300 rounded font-label text-[11px] font-bold tracking-wide uppercase text-white flex items-center justify-center gap-2 relative z-10 overflow-hidden
-                  ${(proofState === 'proofed' && requiresApproval) ? 'bg-zinc-300 text-zinc-500 cursor-not-allowed hover:-translate-y-0 hover:shadow-none' : proofState === 'proofed' && !correctionsApplied ? 'opacity-50 cursor-not-allowed text-zinc-400 bg-zinc-200 hover:-translate-y-0 hover:shadow-none' : proofState === 'proofed' ? 'bg-black hover:bg-zinc-900 hover:-translate-y-[1px] hover:shadow-md' : 'bg-zinc-800 hover:bg-zinc-900 hover:-translate-y-[1px] hover:shadow-md'}
+                  ${(proofState === 'proofed' && requiresApproval) ? 'bg-zinc-300 text-zinc-500 cursor-not-allowed hover:-translate-y-0 hover:shadow-none' : proofState === 'proofed' ? 'bg-black hover:bg-zinc-900 hover:-translate-y-[1px] hover:shadow-md' : 'bg-zinc-800 hover:bg-zinc-900 hover:-translate-y-[1px] hover:shadow-md'}
                   ${(proofState === 'proofing' || proofState === 'sending') ? 'opacity-90 cursor-wait hover:-translate-y-0 hover:shadow-none' : ''} 
                   ${(editedResponse.trim().length === 0) ? 'opacity-50 cursor-not-allowed text-zinc-400 bg-zinc-200 hover:-translate-y-0 hover:shadow-none' : ''}
                 `}
