@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Hub Dashboard API - Using raw SQL to avoid schema import issues
 import { neon } from '@neondatabase/serverless';
 
@@ -28,7 +27,7 @@ function getCategoryLabel(categoryEnum: string): string {
   return CATEGORY_LABELS[categoryEnum] || categoryEnum;
 }
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -42,7 +41,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = neon(process.env.DATABASE_URL!);
 
     // Get Sydney timezone for today's date
     const now = new Date();
@@ -56,6 +55,7 @@ export default async function handler(req, res) {
       FROM tickets
       WHERE (status = 'new' OR status = 'classified')
       AND archived_at IS NULL
+      AND send_status != 'sent'
     `;
     const total_queue = parseInt(totalQueueResult.count) || 0;
 
@@ -66,6 +66,7 @@ export default async function handler(req, res) {
       INNER JOIN triage_results tr ON t.triage_result_id = tr.id
       WHERE (t.status = 'new' OR t.status = 'classified')
       AND t.archived_at IS NULL
+      AND t.send_status != 'sent'
       AND tr.urgency >= 7
     `;
     const urgent_count = parseInt(urgentResult.count) || 0;
@@ -85,6 +86,7 @@ export default async function handler(req, res) {
       FROM tickets
       WHERE status = 'classified'
       AND archived_at IS NULL
+      AND send_status != 'sent'
     `;
     const pending_review = parseInt(pendingReviewResult.count) || 0;
 
@@ -103,6 +105,7 @@ export default async function handler(req, res) {
     const queueItems = await sql`
       SELECT
         t.id as ticket_id,
+        ie.id as email_id,
         t.status,
         t.send_status as sendStatus,
         ie.from_email as fromEmail,
@@ -121,6 +124,7 @@ export default async function handler(req, res) {
       INNER JOIN triage_results tr ON t.triage_result_id = tr.id
       WHERE (t.status = 'new' OR t.status = 'classified')
       AND t.archived_at IS NULL
+      AND t.send_status != 'sent'
       ORDER BY t.created_at DESC
       LIMIT 50
     `;
@@ -136,6 +140,7 @@ export default async function handler(req, res) {
       INNER JOIN triage_results tr ON t.triage_result_id = tr.id
       WHERE (t.status = 'new' OR t.status = 'classified')
       AND t.archived_at IS NULL
+      AND t.send_status != 'sent'
       GROUP BY tr.category_primary
     `;
 

@@ -6,6 +6,7 @@ import type { CategorySummaryItem, QueueTicketItem, RiskLevel, UrgencyLevel, Cri
 
 export interface ApiQueueItem {
   ticket_id: string;
+  email_id: string;
   status: string;
   sendstatus: string | null;
   fromemail: string;
@@ -108,7 +109,7 @@ export function transformApiToHubData(api: ApiDashboardResponse): HubMvpData {
 
     const ticket: QueueTicketItem = {
       id:             item.ticket_id,
-      emailId:        item.ticket_id,   // email_id not in payload; ticket_id used as safe stand-in
+      emailId:        item.email_id,
       customerName:   item.fromname ?? item.fromemail,
       subject:        item.subject,
       preview:        (item.customerintentsummary ?? item.subject).slice(0, 150),
