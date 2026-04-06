@@ -2,15 +2,86 @@
 // Progressive hydration model for Notification HUD + Resolution Console
 import Anthropic from '@anthropic-ai/sdk';
 import { neon } from '@neondatabase/serverless';
-import {
-  generateTOVProofingChecklist,
-  applySagitineTOVCleanup,
-  assessBrandCompliance,
-} from './internal/config/sagitine-tov';
-
 export const config = {
   runtime: 'nodejs',
 };
+
+// ============================================================================
+// SAGITINE TOV — inlined to keep this function self-contained on Vercel
+// ============================================================================
+
+function applySagitineTOVCleanup(text: string): string {
+  let cleaned = text;
+  cleaned = cleaned.replaceAll(/\bdrawers?\b/g, 'Box');
+  cleaned = cleaned.replaceAll(/\bunit\b/g, 'Box');
+  cleaned = cleaned.replace(/\bitem(s)?\b/g, 'Box');
+  cleaned = cleaned.replace(/I'm sorry to hear/gi, 'Thank you for letting me know');
+  cleaned = cleaned.replace(/We apologise for/gi, 'Thank you for bringing this to our attention');
+  cleaned = cleaned.replace(/So sorry about/gi, 'I appreciate you sharing');
+  cleaned = cleaned.replace(/sorry for any inconvenience/gi, 'Thank you for your patience');
+  cleaned = cleaned.replace(/I apologize/gi, 'Thank you');
+  cleaned = cleaned.replace(/We apologize/gi, 'We appreciate');
+  cleaned = cleaned.replace(/Unfortunately[,;\s]+/gi, ', ');
+  cleaned = cleaned.replace(/No worries[,;\s]*[.!]?/gi, '.');
+  cleaned = cleaned.replace(/That's awesome/gi, "That's great");
+  cleaned = cleaned.replace(/Super[,;\s]+/gi, 'Very ');
+  cleaned = cleaned.replace(/Hey[,;\s]+\w+/gi, 'Hi');
+  cleaned = cleaned.replace(/Regards[,\s]*/gi, 'Warm regards, ');
+  cleaned = cleaned.replace(/Best regards[,\s]*/gi, 'Warm regards, ');
+  cleaned = cleaned.replace(/Kind regards[,\s]*/gi, 'Warm regards, ');
+  if (!cleaned.match(/Warm regards,\s*Heidi x/i)) {
+    cleaned = cleaned.replace(/Regards[^\n]+/gi, '');
+    cleaned = cleaned.replace(/Best[^\n]+/gi, '');
+    cleaned = cleaned.trimEnd() + '\n\nWarm regards,\nHeidi x';
+  }
+  return cleaned;
+}
+
+function generateTOVProofingChecklist(): string {
+  return `
+PROOFING CHECKLIST:
+1. Spelling: Check for typos, prefer Australian English (colour, optimise, organisation)
+2. Grammar: Fix grammatical errors
+3. Duplication: Catch repeated phrases or duplicate sign-offs
+4. Clarity: Ensure message is clear and concise
+5. Tone: Verify warmth and professionalism without over-apologizing
+6. Risk: Flag any claims about refunds, policies, or promises not already present
+
+SAGITINE BRAND TOV COMPLIANCE:
+7. Terminology: Must use "Box/Boxes", never "drawer/drawers" or generic "unit/item"
+8. Apology drift: Check for "I'm sorry", "We apologise", "Unfortunately" - replace with preferred phrasing
+9. Casual language: Flag "No worries", "Awesome", "Super", "Hey" - maintain premium tone
+10. Sign-off quality: Must be "Warm regards, Heidi x" - elegant and consistent
+11. Preferred phrasing: Use "Thank you for reaching out", "Thank you for letting me know", "I can arrange/organise"
+12. Luxury CX tone: Ensure calm, warm, polished, helpful, quietly premium - never gushy or corporate
+13. Structure: Short paragraphs, direct next step, ownership language, concise explanation
+
+IMPORTANT RULES:
+- Keep edits minimal and faithful to original intent
+- Do NOT invent refunds, policies, or operational actions not already present
+- Do NOT add apologies (Sagitine tone: "Thank you for reaching out" not "I'm sorry")
+- Preserve the signature "Warm regards, Heidi x"
+- Apply deterministic fixes for obvious TOV violations (terminology, apologies, casual language)
+`;
+}
+
+function assessBrandCompliance(suggestions: any[]): 'pass' | 'fixes_applied' | 'warning' {
+  const tovSuggestions = suggestions.filter(s =>
+    s.type === 'tone' ||
+    s.type === 'terminology' ||
+    s.type === 'sign-off' ||
+    s.message?.toLowerCase().includes('drawer') ||
+    s.message?.toLowerCase().includes('sorry') ||
+    s.message?.toLowerCase().includes('apolog') ||
+    s.message?.toLowerCase().includes('unfortunately') ||
+    s.message?.toLowerCase().includes('casual')
+  );
+  const highSeverity = tovSuggestions.filter(s => s.severity === 'high').length;
+  const mediumSeverity = tovSuggestions.filter(s => s.severity === 'medium').length;
+  if (highSeverity > 0) return 'warning';
+  if (mediumSeverity > 0 || tovSuggestions.length > 0) return 'fixes_applied';
+  return 'pass';
+}
 
 // ============================================================================
 // HUD FILTER LOGIC (Locked)
