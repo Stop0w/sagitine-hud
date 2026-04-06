@@ -53,6 +53,13 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
     isDismissed: false
   });
   const [localSentTicketIds, setLocalSentTicketIds] = useState<string[]>([]);
+  const [localArchivedTicketIds, setLocalArchivedTicketIds] = useState<string[]>([]);
+
+  const handleArchiveTicket = async (ticketId: string): Promise<void> => {
+    const res = await fetch(`/api/hub/ticket/${ticketId}/resolve`, { method: 'POST' });
+    if (!res.ok) throw new Error(`Archive failed: ${res.status}`);
+    setLocalArchivedTicketIds(prev => [...prev, ticketId]);
+  };
 
   // Focus management
   useEffect(() => {
@@ -99,7 +106,8 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
 
   // Derive active items for rendering
   const activeCategory = activeCategoryId ? categories.find((c) => c.id === activeCategoryId) : null;
-  const activeQueue = activeCategory ? queueByCategory[activeCategory.id] || [] : [];
+  const activeQueue = (activeCategory ? queueByCategory[activeCategory.id] || [] : [])
+    .filter((t: any) => !localArchivedTicketIds.includes(t.id));
   const activeConsoleData = activeTicketId ? consoleByTicketId[activeTicketId] : null;
 
   // Helper for badging
@@ -245,6 +253,7 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
                     onTicketClick={(ticketId: string) => onNavigate(LEVEL_3_CONSOLE, { categoryId: activeCategoryId, ticketId })}
                     sentTicketIds={localSentTicketIds}
                     onDismissTicket={(id) => setLocalSentTicketIds(prev => prev.filter(t => t !== id))}
+                    onDeleteTicket={handleArchiveTicket}
                   />
                 )}
               </div>
