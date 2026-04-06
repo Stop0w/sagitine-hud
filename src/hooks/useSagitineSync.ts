@@ -42,20 +42,27 @@ export function useSagitineSync<T = unknown>(
 
   // Track polling with ref to avoid stale closures
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  // Separate controllers so a background poll never aborts an operator-triggered refetch
+  const pollAbortRef = useRef<AbortController | null>(null);
+  const manualAbortRef = useRef<AbortController | null>(null);
 
   /**
    * Fetch data from API endpoint.
    * Uses AbortController to cancel pending requests on unmount.
+   * silent=true: background poll (uses pollAbortRef, won't cancel manual fetches)
+   * silent=false: operator-triggered refetch (uses manualAbortRef, won't cancel polls)
    */
   const fetchData = useCallback(async (silent: boolean = false) => {
-    // Cancel any pending request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+    // Create a fresh controller for this request, cancel its predecessor if still in-flight.
+    // Separate refs ensure polls never cancel manual fetches and vice versa.
+    const abortController = new AbortController();
+    if (silent) {
+      pollAbortRef.current?.abort();
+      pollAbortRef.current = abortController;
+    } else {
+      manualAbortRef.current?.abort();
+      manualAbortRef.current = abortController;
     }
-
-    // Create new abort controller for this request
-    abortControllerRef.current = new AbortController();
 
     try {
       // Only show loading state on initial fetch
@@ -65,7 +72,7 @@ export function useSagitineSync<T = unknown>(
       setError(null);
 
       const response = await fetch(endpoint, {
-        signal: abortControllerRef.current.signal,
+        signal: abortController.signal,
       });
 
       if (!response.ok) {
@@ -146,14 +153,11 @@ export function useSagitineSync<T = unknown>(
       }
     }, pollingIntervalMs);
 
-    // Cleanup: cancel pending requests and clear interval
+    // Cleanup: cancel all in-flight requests and clear the polling interval
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-      }
+      pollAbortRef.current?.abort();
+      manualAbortRef.current?.abort();
+      if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, [enabled, pollingIntervalMs, fetchData]);
 

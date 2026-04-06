@@ -10,6 +10,7 @@ import type { HubView, ResolutionConsoleData } from "./features/notification-hub
 
 function App() {
   const pillRef = useRef<HTMLButtonElement>(null);
+  const fetchedTicketIds = useRef<Set<string>>(new Set());
   const [isHubOpen, setIsHubOpen] = useState(false);
   const [currentView, setCurrentView] = useState<HubView>("LEVEL_1_HUB");
   // Check UI mode explicitly as used in NotificationHub
@@ -25,22 +26,29 @@ function App() {
     enabled: true,
   });
 
-  // Fetch individual ticket payload when traversing deep dive screens
+  // Fetch individual ticket payload when traversing deep dive screens.
+  // fetchedTicketIds ref tracks which IDs have been requested so we don't
+  // re-fetch on unrelated state changes — avoids consoleDataMap in deps.
   useEffect(() => {
-    if (activeTicketId && !consoleDataMap[activeTicketId]) {
+    if (activeTicketId && !fetchedTicketIds.current.has(activeTicketId)) {
+      fetchedTicketIds.current.add(activeTicketId);
       fetch(`/api/tickets/${activeTicketId}`)
         .then(res => res.json())
         .then(json => {
           if (json.success && json.data) {
-            const transformed = UI_MODE === 'mvp' 
-              ? transformApiToMvpConsoleData(json.data) 
+            const transformed = UI_MODE === 'mvp'
+              ? transformApiToMvpConsoleData(json.data)
               : transformApiToConsoleData(json.data);
             setConsoleDataMap(prev => ({ ...prev, [activeTicketId]: transformed as any }));
           }
         })
-        .catch(err => console.error("Failed to deeply hydrate ticket:", err));
+        .catch(err => {
+          // Remove from fetched set so a retry is possible on next navigation
+          fetchedTicketIds.current.delete(activeTicketId);
+          console.error("Failed to deeply hydrate ticket:", err);
+        });
     }
-  }, [activeTicketId, consoleDataMap]);
+  }, [activeTicketId]);
 
   // Transform API response into UI format — memoised so it only reruns when apiData changes,
   // not on every hub open/close or navigation state change.

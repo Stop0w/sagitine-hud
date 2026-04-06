@@ -27,8 +27,13 @@ function getCategoryLabel(categoryEnum: string): string {
   return CATEGORY_LABELS[categoryEnum] || categoryEnum;
 }
 
+// Restrict CORS to the Vercel deployment URL. Falls back to localhost for local dev.
+const ALLOWED_ORIGIN = process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}`
+  : 'http://localhost:5173';
+
 export default async function handler(req: any, res: any) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
