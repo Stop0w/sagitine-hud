@@ -1039,8 +1039,11 @@ async function dispatchTicket(req: any, res: any) {
     }
 
     const graphToken = await getGraphToken();
-    // Ensure two blank lines before any quoted thread separator so Outlook renders cleanly
-    const htmlToSend = final_message_sent.replace(/(<hr\s*\/?>.*)?$/, '<br><br>$1');
+    // Insert <br><br> before the quoted thread <hr> so Outlook renders space above the separator.
+    // Only applies when a quoted thread exists; otherwise send as-is.
+    const htmlToSend = final_message_sent.includes('<hr')
+      ? final_message_sent.replace(/<hr/, '<br><br><hr')
+      : final_message_sent;
     await sendViaGraph(graphToken, senderEmail, ctx.from_email, ctx.from_name || '', replySubject, htmlToSend);
 
     // ── 4. UPDATE TICKET ─────────────────────────────────────────────────────
@@ -1050,7 +1053,7 @@ async function dispatchTicket(req: any, res: any) {
           sent_at     = NOW(),
           status      = 'approved',
           human_edited      = true,
-          human_edited_body = ${final_message_sent}
+          human_edited_body = ${htmlToSend}
       WHERE id = ${ticketId}
     `;
 
@@ -1072,7 +1075,7 @@ async function dispatchTicket(req: any, res: any) {
       ) VALUES (
         ${ticketId},
         ${ctx.reply_body || ''},
-        ${final_message_sent},
+        ${htmlToSend},
         ${ctx.confidence},
         ${true},
         ${!!recentProof},

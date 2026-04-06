@@ -72,7 +72,7 @@ export function TicketQueue({ categoryId, tickets, onTicketClick, onBack, sentTi
           </button>
         </div>
         <span className="font-label text-[10px] tracking-widest text-zinc-400">
-          {tickets.length} ITEMS
+          {tickets.filter(t => !sentTicketIds.includes(t.id)).length} ITEMS
         </span>
       </header>
 
