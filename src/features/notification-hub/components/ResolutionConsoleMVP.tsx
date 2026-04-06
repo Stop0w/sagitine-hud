@@ -1,6 +1,32 @@
 // src/features/notification-hub/components/ResolutionConsoleMVP.tsx
 
 import React, { useState } from 'react';
+
+// Strip HTML to plain text for editing — removes quoted original email too
+function htmlToPlainText(html: string): string {
+  if (!html) return '';
+  return html
+    .replace(/<hr\s*\/?>\s*<blockquote[\s\S]*$/i, '') // remove quoted thread
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<p[^>]*>/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+}
+
+// Convert plain text back to HTML for sending
+function plainTextToHtml(text: string): string {
+  if (!text) return '';
+  return text
+    .split(/\n\n+/)
+    .map(p => `<p>${p.trim().replace(/\n/g, '<br>')}</p>`)
+    .filter(p => p !== '<p></p>')
+    .join('');
+}
 import type { HubTicketHydration, ProofState, ProofResponse, ProofApiResponse } from '../types/mvp';
 import { ConsoleSharedState } from './ResolutionConsole'; // Kept for the parent Hub interface
 
@@ -34,7 +60,7 @@ export function ResolutionConsoleMVP({
   const [correctionsApplied, setCorrectionsApplied] = useState<boolean>(false);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editedResponse, setEditedResponse] = useState<string>(triage.draftResponse || '');
+  const [editedResponse, setEditedResponse] = useState<string>(htmlToPlainText(triage.draftResponse || ''));
   const [hasEverBeenEdited, setHasEverBeenEdited] = useState(false);
   const [lastProofedDraft, setLastProofedDraft] = useState<string>('');
 
@@ -106,11 +132,13 @@ export function ResolutionConsoleMVP({
       return new Promise((resolve) => setTimeout(resolve, 1200));
     }
 
-    // Production explicit send logic
-    const response = await fetch(`/api/tickets/${ticket.id}/sent`, {
+    // Convert plain text back to HTML for Outlook
+    const finalHtml = plainTextToHtml(finalText);
+
+    const response = await fetch(`/api/hub/ticket/${ticket.id}/dispatch`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ final_message_sent: finalText })
+      body: JSON.stringify({ final_message_sent: finalHtml })
     });
 
     if (!response.ok) throw new Error('Send dispatch failed');
@@ -118,10 +146,9 @@ export function ResolutionConsoleMVP({
   };
 
   const executeProof = async () => {
-    const payloadText = editedResponse || triage.draftResponse || '';
+    const payloadText = editedResponse || htmlToPlainText(triage.draftResponse || '');
 
     setProofState('proofing');
-    setIsEditing(false); // Close editor visually to show diff
 
     try {
       const apiResponse = await apiSubmitProof(payloadText);
@@ -146,12 +173,12 @@ export function ResolutionConsoleMVP({
   const executeSend = async () => {
     if (proofState !== 'proofed') return; // Strict guard
 
-    const finalPayload = editedResponse; // MUST be exactly what is in the editor
+    const finalPayload = editedResponse;
 
     setProofState('sending');
     try {
       await apiSubmitApproval(finalPayload);
-      if (onApprove) onApprove(finalPayload);
+      setProofState('sent'); // Show confirmation before removing from queue
     } catch (e) {
       setProofState('send_failed');
     }
@@ -166,7 +193,7 @@ export function ResolutionConsoleMVP({
   };
 
   const handleReset = () => {
-    setEditedResponse(triage.draftResponse || '');
+    setEditedResponse(htmlToPlainText(triage.draftResponse || ''));
     setHasEverBeenEdited(false);
     setProofState('not_proofed');
     setProofResult(null);
@@ -498,7 +525,7 @@ export function ResolutionConsoleMVP({
 
             <div className="flex items-center gap-1">
               <button
-                onClick={() => navigator.clipboard.writeText(editedResponse || triage.draftResponse || '')}
+                onClick={() => navigator.clipboard.writeText(editedResponse || htmlToPlainText(triage.draftResponse || ''))}
                 className="p-1.5 text-zinc-400 hover:text-primary hover:bg-zinc-200 rounded transition-all"
                 title="Copy current draft"
               >
@@ -525,21 +552,45 @@ export function ResolutionConsoleMVP({
           </div>
 
           <div className="flex-grow p-4 overflow-y-auto">
-            {isEditing ? (
-              <textarea
-                value={editedResponse}
-                onChange={handleTextChange}
-                className="w-full h-[300px] p-4 bg-white border border-tertiary/40 rounded-md font-body text-[14px] text-on-surface leading-relaxed focus:outline-none focus:ring-2 focus:ring-tertiary/70 focus:border-transparent resize-none shadow-sm"
-              />
-            ) : (
-              <div
-                className="prose prose-sm max-w-none [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:text-gray-600 [&_hr]:my-4 [&_p]:mb-3"
-                dangerouslySetInnerHTML={{ __html: editedResponse || triage.draftResponse || '' }}
-              />
-            )}
 
-            {/* Backend Data-Driven Proofing Results */}
-            {proofState === 'proofed' && proofResult && (
+            {/* SENT CONFIRMATION */}
+            {proofState === 'sent' ? (
+              <div className="flex flex-col items-center justify-center h-full gap-5 py-12 text-center">
+                <div className="w-16 h-16 rounded-full bg-green-50 border border-green-200 flex items-center justify-center">
+                  <span className="material-symbols-outlined !text-[32px] text-green-600">mark_email_read</span>
+                </div>
+                <div>
+                  <h3 className="font-headline text-lg font-semibold text-zinc-900 mb-1">Response Dispatched</h3>
+                  <p className="font-body text-sm text-zinc-500 max-w-[280px] leading-relaxed">
+                    Logged and sent. The email will appear in Outlook Sent Items shortly.
+                  </p>
+                </div>
+                <button
+                  onClick={() => onApprove && onApprove('')}
+                  className="px-5 py-2.5 bg-black text-white rounded font-label text-[11px] font-bold tracking-wide uppercase hover:bg-zinc-800 transition-colors mt-2"
+                >
+                  Archive & Close
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* DRAFT DISPLAY / EDITOR */}
+                {isEditing ? (
+                  <textarea
+                    value={editedResponse}
+                    onChange={handleTextChange}
+                    className="w-full h-[260px] p-4 bg-white border border-tertiary/40 rounded-md font-body text-[14px] text-on-surface leading-relaxed focus:outline-none focus:ring-2 focus:ring-tertiary/70 focus:border-transparent resize-none shadow-sm"
+                    placeholder="Edit your response here..."
+                  />
+                ) : (
+                  <div
+                    className="prose prose-sm max-w-none [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:text-gray-600 [&_hr]:my-4 [&_p]:mb-3"
+                    dangerouslySetInnerHTML={{ __html: plainTextToHtml(editedResponse) || triage.draftResponse || '' }}
+                  />
+                )}
+
+            {/* Backend Data-Driven Proofing Results — persistent during editing */}
+            {proofResult && (proofState === 'proofed' || proofState === 'invalidated' || isEditing) && (
               <>
                 {proofResult.suggestions && proofResult.suggestions.length > 0 ? (
                   <div className="mt-4 relative p-4 bg-tertiary/5 border border-tertiary/20 rounded-lg animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -626,13 +677,16 @@ export function ResolutionConsoleMVP({
             {proofState === 'send_failed' && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 flex items-center gap-2">
                 <span className="material-symbols-outlined !text-[18px]">error</span>
-                <p className="font-body text-sm font-medium">Failed to dispatch resolution payload. Please try again.</p>
+                <p className="font-body text-sm font-medium">Failed to dispatch. Please try again.</p>
               </div>
+            )}
+              </>
             )}
           </div>
 
           {/* ACTION FOOTER */}
           <footer className="px-4 py-3 bg-zinc-50 border-t border-outline-variant flex-shrink-0 mt-auto">
+            {proofState === 'sent' ? null : (
             <div className="flex items-center justify-between gap-3">
               <button
                 onClick={handleEditToggle}
@@ -673,17 +727,21 @@ export function ResolutionConsoleMVP({
                 )}
               </button>
             </div>
+            )}
 
             {/* Contextual instruction */}
-            <div className="text-center mt-2 h-4">
-              <p className="font-label text-[9px] text-zinc-400 uppercase tracking-widest">
-                {requiresApproval && proofState === 'proofed' ? "This ticket requires management approval before sending." :
-                  proofState === 'sending' ? "Logging audit trail to backend..." :
-                    proofState === 'invalidated' ? "Changes detected. Reproof thoroughly before sending." :
-                      proofState === 'proofed' ? "Ready for dispatch" :
-                        "Must be proofed securely before sending"}
-              </p>
-            </div>
+            {proofState !== 'sent' && (
+              <div className="text-center mt-2 h-4">
+                <p className="font-label text-[9px] text-zinc-400 uppercase tracking-widest">
+                  {requiresApproval && proofState === 'proofed' ? "This ticket requires management approval before sending." :
+                    proofState === 'sending' ? "Dispatching via Outlook..." :
+                      proofState === 'invalidated' ? "Changes detected — reproof before sending." :
+                        proofState === 'proofed' ? "Ready for dispatch" :
+                          isEditing ? "Proof & Review after editing" :
+                            "Must be proofed before sending"}
+                </p>
+              </div>
+            )}
           </footer>
         </div>
 

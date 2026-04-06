@@ -3,13 +3,14 @@
 export type UrgencyLevel = 'low' | 'medium' | 'high';
 export type RiskLevel = 'low' | 'medium' | 'high';
 
-export type ProofState = 
+export type ProofState =
   | "not_proofed"
   | "proofing"
   | "proofed"
   | "invalidated"
   | "sending"
-  | "send_failed";
+  | "send_failed"
+  | "sent";
 
 export type BackendProofStatus = "proofed" | "warning" | "error";
 

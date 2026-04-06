@@ -912,6 +912,107 @@ async function resolveTicketManually(req: any, res: any) {
 }
 
 // ============================================================================
+// POST /api/hub/ticket/:id/dispatch - Send from HUD
+// ============================================================================
+
+/**
+ * Dispatch endpoint called when operator clicks SEND RESPONSE in the HUD.
+ * Marks ticket as sent in DB, writes send audit, and calls Make.com webhook
+ * (MAKE_SEND_WEBHOOK_URL) if configured so Make.com can send via Outlook.
+ */
+async function dispatchTicket(req: any, res: any) {
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const ticketId = url.pathname.split('/').slice(0, -1).pop();
+
+    if (!ticketId) {
+      return res.status(400).json({ success: false, error: 'Ticket ID required', timestamp: new Date().toISOString() });
+    }
+
+    const { final_message_sent } = req.body || {};
+    const sql = neon(process.env.DATABASE_URL!);
+
+    // Fetch ticket context for audit
+    const ticketContextRaw = await sql`
+      SELECT t.id, t.send_status, t.human_edited, t.human_edited_body,
+             tr.reply_body, tr.confidence, tr.category_primary
+      FROM tickets t
+      INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+      WHERE t.id = ${ticketId}
+      LIMIT 1
+    `;
+    const ticketCtx = ticketContextRaw[0];
+
+    if (!ticketCtx) {
+      return res.status(404).json({ success: false, error: 'Ticket not found', timestamp: new Date().toISOString() });
+    }
+
+    // Guard against double-send
+    if (ticketCtx.send_status === 'sent') {
+      return res.status(409).json({ success: false, error: 'Ticket already sent', timestamp: new Date().toISOString() });
+    }
+
+    // Mark ticket as sent
+    await sql`
+      UPDATE tickets
+      SET send_status = 'sent', sent_at = NOW(), status = 'approved',
+          human_edited = true, human_edited_body = ${final_message_sent || null}
+      WHERE id = ${ticketId}
+    `;
+
+    // Persist send audit
+    const recentProofRaw = await sql`
+      SELECT id FROM draft_proofs WHERE ticket_id = ${ticketId}
+      ORDER BY proofed_at DESC LIMIT 1
+    `;
+    const recentProof = recentProofRaw[0];
+
+    await sql`
+      INSERT INTO send_audit (
+        ticket_id, initial_draft, final_message_sent, confidence_rating,
+        was_human_edited, was_proofed, resolution_mechanism, proof_id, sent_at
+      ) VALUES (
+        ${ticketId},
+        ${ticketCtx.reply_body || ''},
+        ${final_message_sent || ''},
+        ${ticketCtx.confidence},
+        ${true},
+        ${!!recentProof},
+        ${recentProof ? 'human_proofed' : 'human_edited'},
+        ${recentProof?.id || null},
+        NOW()
+      )
+    `;
+
+    // Call Make.com webhook if configured (triggers Outlook send)
+    const makeWebhookUrl = process.env.MAKE_SEND_WEBHOOK_URL;
+    let webhookCalled = false;
+    if (makeWebhookUrl) {
+      try {
+        await fetch(makeWebhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticket_id: ticketId, final_message_sent }),
+        });
+        webhookCalled = true;
+      } catch (e: any) {
+        console.error('Make.com webhook call failed:', e?.message);
+        // Don't fail the overall request — ticket is already marked sent in DB
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: { ticket_id: ticketId, send_status: 'sent', webhook_called: webhookCalled },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error('POST /api/hub/ticket/:id/dispatch error:', error);
+    return res.status(500).json({ success: false, error: error.message, timestamp: new Date().toISOString() });
+  }
+}
+
+// ============================================================================
 // ROUTER - Dispatch based on HTTP method and path
 // ============================================================================
 
@@ -956,6 +1057,11 @@ export default async function handler(req: any, res: any) {
   // POST /api/hub/ticket/:id/proof - Real proof endpoint
   if (req.method === 'POST' && pathname.match(/^\/api\/hub\/ticket\/[^/]+\/proof$/)) {
     return proofTicketDraft(req, res);
+  }
+
+  // POST /api/hub/ticket/:id/dispatch - Send from HUD
+  if (req.method === 'POST' && pathname.match(/^\/api\/hub\/ticket\/[^/]+\/dispatch$/)) {
+    return dispatchTicket(req, res);
   }
 
   // POST /api/hub/ticket/:id/resolve - Manual resolution
