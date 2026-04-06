@@ -110,6 +110,8 @@ function assessBrandCompliance(suggestions: any[]): 'pass' | 'fixes_applied' | '
 // CATEGORY LABEL MAPPING (13 Canonical Categories → Human Readable)
 // ============================================================================
 
+// NOTE: This map is intentionally duplicated in api/hub-dashboard.ts (Vercel self-contained function rule —
+// no cross-file imports allowed). If you update labels here, update api/hub-dashboard.ts CATEGORY_LABELS too.
 const CATEGORY_LABELS: Record<string, string> = {
   damaged_missing_faulty: 'Damaged & Faulty',
   shipping_delivery_order_issue: 'Shipping & Delivery',

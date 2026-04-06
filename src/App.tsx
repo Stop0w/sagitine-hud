@@ -114,7 +114,7 @@ function App() {
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
                 <p className="font-sans text-sm text-on-surface-variant">
-                  Connecting to Sagitne servers...
+                  Connecting to Sagitine servers...
                 </p>
               </div>
             ) : (
@@ -123,7 +123,7 @@ function App() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-sans text-xl text-primary font-medium mb-1">
-                      {activeHubData?.metrics.totalOpen || 0} enquires waiting
+                      {activeHubData?.metrics.totalOpen || 0} enquiries waiting
                     </p>
                     <p className="font-sans text-sm text-on-surface-variant">
                       {activeHubData?.metrics.urgentCount || 0} require urgent attention • Updated just now

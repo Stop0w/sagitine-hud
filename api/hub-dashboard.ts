@@ -6,6 +6,8 @@ export const config = {
   runtime: 'nodejs',
 };
 
+// NOTE: This map is intentionally duplicated in api/hub.ts (Vercel self-contained function rule —
+// no cross-file imports allowed). If you update labels here, update api/hub.ts CATEGORY_LABELS too.
 const CATEGORY_LABELS: Record<string, string> = {
   damaged_missing_faulty: 'Damaged & Faulty',
   shipping_delivery_order_issue: 'Shipping & Delivery',
