@@ -86,9 +86,21 @@ function normaliseStatus(status: string): QueueTicketItem['status'] {
 // ─── Main transformer ─────────────────────────────────────────────────────────
 
 export function transformApiToHubData(api: ApiDashboardResponse): HubMvpData {
-  // 1. Build categories with real counts from the API
+  // 1. Pre-compute average waiting minutes per category from the queue items
+  //    (limited to the 50 most recent tickets in the payload, so approximate for large queues)
+  const categoryAgeMap: Record<string, { totalMinutes: number; count: number }> = {};
+  for (const item of api.queue) {
+    const cat = item.categoryprimary;
+    const mins = waitingMinutes(item.receivedat);
+    if (!categoryAgeMap[cat]) categoryAgeMap[cat] = { totalMinutes: 0, count: 0 };
+    categoryAgeMap[cat].totalMinutes += mins;
+    categoryAgeMap[cat].count += 1;
+  }
+
+  // 2. Build categories with real counts from the API
   const categories: CategorySummaryItem[] = Object.entries(CATEGORY_CONFIG).map(([id, cfg]) => {
     const apiCat = api.categories.find(c => c.category === id);
+    const ageEntry = categoryAgeMap[id];
     return {
       id,
       label: cfg.label,
@@ -97,11 +109,11 @@ export function transformApiToHubData(api: ApiDashboardResponse): HubMvpData {
       urgency: (apiCat?.urgency as UrgencyLevel) ?? 'low',
       hasNew: (apiCat?.count ?? 0) > 0,
       avgConfidence: apiCat?.avgConfidence ?? 0,
-      avgAgeMinutes: 0,   // not yet provided by the dashboard endpoint
+      avgAgeMinutes: ageEntry ? Math.round(ageEntry.totalMinutes / ageEntry.count) : 0,
     };
   });
 
-  // 2. Map queue items and group by category
+  // 3. Map queue items and group by category
   const queueByCategory: Record<string, QueueTicketItem[]> = {};
 
   for (const item of api.queue) {
@@ -128,10 +140,16 @@ export function transformApiToHubData(api: ApiDashboardResponse): HubMvpData {
     queueByCategory[categoryId].push(ticket);
   }
 
-  // 3. Derive criticality from urgent / total ratio
+  // 4. Derive criticality from urgent / total ratio
   const ratio = api.total_queue > 0 ? api.urgent_count / api.total_queue : 0;
   const criticality: CriticalityLevel =
     ratio >= 0.5 ? 'CRITICAL' : ratio >= 0.2 ? 'ELEVATED' : 'NOMINAL';
+
+  // 5. Derive overall avgConfidence as a weighted average across all categories
+  const totalCatTickets = api.categories.reduce((sum, c) => sum + c.count, 0);
+  const avgConfidence = totalCatTickets > 0
+    ? api.categories.reduce((sum, c) => sum + c.avgConfidence * c.count, 0) / totalCatTickets
+    : 0;
 
   return {
     categories,
@@ -139,8 +157,8 @@ export function transformApiToHubData(api: ApiDashboardResponse): HubMvpData {
       totalOpen:              api.total_queue,
       urgentCount:            api.urgent_count,
       reviewCount:            api.pending_review,
-      avgResponseTimeMinutes: 0,    // not provided by dashboard endpoint
-      avgConfidence:          0,    // not aggregated at dashboard level
+      avgResponseTimeMinutes: 0,    // not derivable without sent audit data
+      avgConfidence:          Math.round(avgConfidence * 1000) / 1000,
       criticality,
     },
     queueByCategory,
