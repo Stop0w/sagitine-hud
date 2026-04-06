@@ -1012,6 +1012,7 @@ async function dispatchTicket(req: any, res: any) {
         t.approved_at, t.created_at,
         tr.reply_body, tr.confidence, tr.category_primary, tr.reply_subject,
         ie.from_email, ie.from_name, ie.subject, ie.source_thread_id,
+        ie.body_html as original_body_html,
         ie.received_at as email_received_at
       FROM tickets t
       INNER JOIN triage_results tr ON t.triage_result_id = tr.id
@@ -1039,11 +1040,13 @@ async function dispatchTicket(req: any, res: any) {
     }
 
     const graphToken = await getGraphToken();
-    // Insert <br><br> before the quoted thread <hr> so Outlook renders space above the separator.
-    // Only applies when a quoted thread exists; otherwise send as-is.
-    const htmlToSend = final_message_sent.includes('<hr')
-      ? final_message_sent.replace(/<hr/, '<br><br><hr')
-      : final_message_sent;
+    // Re-append the original inbound email as a quoted thread.
+    // htmlToPlainText() strips <hr><blockquote> so the operator only edits the reply body.
+    // We restore it here using the raw body_html from inbound_emails so Outlook shows the full thread.
+    let htmlToSend = final_message_sent;
+    if (ctx.original_body_html) {
+      htmlToSend += `<br><br><hr><blockquote style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">${ctx.original_body_html}</blockquote>`;
+    }
     await sendViaGraph(graphToken, senderEmail, ctx.from_email, ctx.from_name || '', replySubject, htmlToSend);
 
     // ── 4. UPDATE TICKET ─────────────────────────────────────────────────────
