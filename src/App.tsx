@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { NotificationPill } from "./features/notification-hub/components/NotificationPill";
 import { NotificationHub } from "./features/notification-hub/components/NotificationHub";
 import { useSagitineSync } from "./hooks/useSagitineSync";
@@ -42,8 +42,12 @@ function App() {
     }
   }, [activeTicketId, consoleDataMap]);
 
-  // Transform API response into UI format (use mock data as fallback)
-  const activeHubData = apiData ? transformApiToHubData(apiData) : null;
+  // Transform API response into UI format — memoised so it only reruns when apiData changes,
+  // not on every hub open/close or navigation state change.
+  const activeHubData = useMemo(
+    () => apiData ? transformApiToHubData(apiData) : null,
+    [apiData]
+  );
 
   const handleNavigate = (
     view: HubView,

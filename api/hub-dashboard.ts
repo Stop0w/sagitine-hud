@@ -49,100 +49,112 @@ export default async function handler(req: any, res: any) {
     const startOfDay = new Date(sydneyTime);
     startOfDay.setHours(0, 0, 0, 0);
 
-    // Query: Total queue
-    const [totalQueueResult] = await sql`
-      SELECT COUNT(*) as count
-      FROM tickets
-      WHERE (status = 'new' OR status = 'classified')
-      AND archived_at IS NULL
-      AND send_status != 'sent'
-    `;
-    const total_queue = parseInt(totalQueueResult.count) || 0;
+    // Run all queries in parallel — none depend on each other's results.
+    // COUNT(*) always returns exactly 1 row, so [result] destructuring is safe.
+    const [
+      [totalQueueResult],
+      [urgentResult],
+      [sentTodayResult],
+      [pendingReviewResult],
+      [approvedResult],
+      [rejectedResult],
+      queueItems,
+      categoryStats,
+    ] = await Promise.all([
 
-    // Query: Urgent count
-    const [urgentResult] = await sql`
-      SELECT COUNT(*) as count
-      FROM tickets t
-      INNER JOIN triage_results tr ON t.triage_result_id = tr.id
-      WHERE (t.status = 'new' OR t.status = 'classified')
-      AND t.archived_at IS NULL
-      AND t.send_status != 'sent'
-      AND tr.urgency >= 7
-    `;
-    const urgent_count = parseInt(urgentResult.count) || 0;
+      // Total open queue
+      sql`
+        SELECT COUNT(*) as count
+        FROM tickets
+        WHERE (status = 'new' OR status = 'classified')
+        AND archived_at IS NULL
+        AND send_status != 'sent'
+      `,
 
-    // Query: Sent today
-    const [sentTodayResult] = await sql`
-      SELECT COUNT(*) as count
-      FROM tickets
-      WHERE send_status = 'sent'
-      AND sent_at >= ${startOfDay.toISOString()}
-    `;
-    const sent_today = parseInt(sentTodayResult.count) || 0;
+      // Urgent tickets (urgency >= 7) in the open queue
+      sql`
+        SELECT COUNT(*) as count
+        FROM tickets t
+        INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+        WHERE (t.status = 'new' OR t.status = 'classified')
+        AND t.archived_at IS NULL
+        AND t.send_status != 'sent'
+        AND tr.urgency >= 7
+      `,
 
-    // Query: Pending review
-    const [pendingReviewResult] = await sql`
-      SELECT COUNT(*) as count
-      FROM tickets
-      WHERE status = 'classified'
-      AND archived_at IS NULL
-      AND send_status != 'sent'
-    `;
+      // Sent today (Sydney time)
+      sql`
+        SELECT COUNT(*) as count
+        FROM tickets
+        WHERE send_status = 'sent'
+        AND sent_at >= ${startOfDay.toISOString()}
+      `,
+
+      // Pending operator review
+      sql`
+        SELECT COUNT(*) as count
+        FROM tickets
+        WHERE status = 'classified'
+        AND archived_at IS NULL
+        AND send_status != 'sent'
+      `,
+
+      // Approved total
+      sql`SELECT COUNT(*) as count FROM tickets WHERE status = 'approved'`,
+
+      // Rejected total
+      sql`SELECT COUNT(*) as count FROM tickets WHERE status = 'rejected'`,
+
+      // Queue items (latest 50, with email + triage join)
+      sql`
+        SELECT
+          t.id as ticket_id,
+          ie.id as email_id,
+          t.status,
+          t.send_status as sendStatus,
+          ie.from_email as fromEmail,
+          ie.from_name as fromName,
+          ie.subject,
+          tr.category_primary as categoryPrimary,
+          tr.confidence::text as confidence,
+          tr.urgency,
+          tr.risk_level as riskLevel,
+          tr.customer_intent_summary as customerIntentSummary,
+          tr.reply_subject as replySubject,
+          ie.received_at as receivedAt,
+          t.created_at as createdAt
+        FROM tickets t
+        INNER JOIN inbound_emails ie ON t.email_id = ie.id
+        INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+        WHERE (t.status = 'new' OR t.status = 'classified')
+        AND t.archived_at IS NULL
+        AND t.send_status != 'sent'
+        ORDER BY t.created_at DESC
+        LIMIT 50
+      `,
+
+      // Category breakdown (count, avg confidence, max urgency per category)
+      sql`
+        SELECT
+          tr.category_primary as categoryPrimary,
+          COUNT(*) as count,
+          AVG(tr.confidence)::numeric as avgConfidence,
+          MAX(tr.urgency) as maxUrgency
+        FROM tickets t
+        INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+        WHERE (t.status = 'new' OR t.status = 'classified')
+        AND t.archived_at IS NULL
+        AND t.send_status != 'sent'
+        GROUP BY tr.category_primary
+      `,
+    ]);
+
+    const total_queue    = parseInt(totalQueueResult.count)    || 0;
+    const urgent_count   = parseInt(urgentResult.count)        || 0;
+    const sent_today     = parseInt(sentTodayResult.count)     || 0;
     const pending_review = parseInt(pendingReviewResult.count) || 0;
-
-    // Query: Approved and rejected
-    const [approvedResult] = await sql`
-      SELECT COUNT(*) as count FROM tickets WHERE status = 'approved'
-    `;
-    const approved = parseInt(approvedResult.count) || 0;
-
-    const [rejectedResult] = await sql`
-      SELECT COUNT(*) as count FROM tickets WHERE status = 'rejected'
-    `;
-    const rejected = parseInt(rejectedResult.count) || 0;
-
-    // Query: Queue items
-    const queueItems = await sql`
-      SELECT
-        t.id as ticket_id,
-        ie.id as email_id,
-        t.status,
-        t.send_status as sendStatus,
-        ie.from_email as fromEmail,
-        ie.from_name as fromName,
-        ie.subject,
-        tr.category_primary as categoryPrimary,
-        tr.confidence::text as confidence,
-        tr.urgency,
-        tr.risk_level as riskLevel,
-        tr.customer_intent_summary as customerIntentSummary,
-        tr.reply_subject as replySubject,
-        ie.received_at as receivedAt,
-        t.created_at as createdAt
-      FROM tickets t
-      INNER JOIN inbound_emails ie ON t.email_id = ie.id
-      INNER JOIN triage_results tr ON t.triage_result_id = tr.id
-      WHERE (t.status = 'new' OR t.status = 'classified')
-      AND t.archived_at IS NULL
-      AND t.send_status != 'sent'
-      ORDER BY t.created_at DESC
-      LIMIT 50
-    `;
-
-    // Query: Category breakdowns
-    const categoryStats = await sql`
-      SELECT
-        tr.category_primary as categoryPrimary,
-        COUNT(*) as count,
-        AVG(tr.confidence)::numeric as avgConfidence,
-        MAX(tr.urgency) as maxUrgency
-      FROM tickets t
-      INNER JOIN triage_results tr ON t.triage_result_id = tr.id
-      WHERE (t.status = 'new' OR t.status = 'classified')
-      AND t.archived_at IS NULL
-      AND t.send_status != 'sent'
-      GROUP BY tr.category_primary
-    `;
+    const approved       = parseInt(approvedResult.count)      || 0;
+    const rejected       = parseInt(rejectedResult.count)      || 0;
 
     // Build categories map
     const categoriesMap = new Map();

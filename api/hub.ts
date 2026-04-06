@@ -215,51 +215,72 @@ async function getTicketHydration(req: any, res: any) {
       });
     }
 
-    // Calculate thirtyDayVolume on-demand
-    let thirtyDayVolume = 0;
-    if (ticketData.customer_id) {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      const volumeRaw = await sqlQuery`
-        SELECT COUNT(*) as count
-        FROM customer_contact_facts
-        WHERE customer_profile_id = ${ticketData.customer_id}
-          AND direction = 'inbound'
-          AND contact_at >= ${thirtyDaysAgo.toISOString()}
-      `;
-      const volumeResult = volumeRaw[0];
-
-      thirtyDayVolume = volumeResult?.count || 0;
-    }
-
-    // Calculate waitingMinutes (duration since received)
+    // Calculate waitingMinutes (duration since received) — pure JS, no DB needed
     const waitingMinutes = ticketData.received_at
       ? Math.floor((Date.now() - new Date(ticketData.received_at).getTime()) / 60000)
       : 0;
 
-    // Get lastContactCategory (previous ticket category for this customer)
-    let lastContactCategory = null;
-    if (ticketData.from_email) {
-      const previousRaw = await sqlQuery`
-        SELECT
-          tr.category_primary as category,
-          ie.received_at as "receivedAt"
-        FROM tickets t
-        INNER JOIN triage_results tr ON t.triage_result_id = tr.id
-        INNER JOIN inbound_emails ie ON t.email_id = ie.id
-        WHERE ie.from_email = ${ticketData.from_email}
-          AND t.id != ${ticketId}
-          AND t.status NOT IN ('rejected', 'archived')
-        ORDER BY ie.received_at DESC
-        LIMIT 1
-      `;
-      const previousTicket = previousRaw[0];
+    // Run the three follow-up queries in parallel — none depend on each other
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      if (previousTicket) {
-        lastContactCategory = getCategoryLabel(previousTicket.category);
-      }
-    }
+    const [volumeRaw, previousRaw, strategyRaw] = await Promise.all([
+      // thirtyDayVolume: inbound contact count for this customer over the last 30 days
+      ticketData.customer_id
+        ? sqlQuery`
+            SELECT COUNT(*) as count
+            FROM customer_contact_facts
+            WHERE customer_profile_id = ${ticketData.customer_id}
+              AND direction = 'inbound'
+              AND contact_at >= ${thirtyDaysAgo.toISOString()}
+          `
+        : Promise.resolve([]),
+
+      // lastContactCategory: most recent previous ticket category for this email
+      ticketData.from_email
+        ? sqlQuery`
+            SELECT
+              tr.category_primary as category,
+              ie.received_at as "receivedAt"
+            FROM tickets t
+            INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+            INNER JOIN inbound_emails ie ON t.email_id = ie.id
+            WHERE ie.from_email = ${ticketData.from_email}
+              AND t.id != ${ticketId}
+              AND t.status NOT IN ('rejected', 'archived')
+            ORDER BY ie.received_at DESC
+            LIMIT 1
+          `
+        : Promise.resolve([]),
+
+      // response_strategies: optional strategy record for this ticket
+      sqlQuery`
+        SELECT
+          rs.summary,
+          rs.recommended_action as "recommendedAction",
+          rs.action_type as "actionType",
+          rs.matched_template_id as "matchedTemplateId",
+          (SELECT title FROM gold_responses WHERE id = rs.matched_template_id) as "matchedTemplateLabel",
+          rs.matched_template_confidence as "matchedTemplateConfidence",
+          rs.drivers,
+          rs.rationale,
+          rs.draft_tone as "draftTone",
+          rs.must_include as "mustInclude",
+          rs.must_avoid as "mustAvoid",
+          rs.customer_context as "customerContext",
+          rs.requires_management_approval as "requiresManagementApproval",
+          rs.management_escalation_reason as "managementEscalationReason"
+        FROM response_strategies rs
+        WHERE rs.ticket_id = ${ticketId}
+        LIMIT 1
+      `,
+    ]);
+
+    const thirtyDayVolume = volumeRaw[0]?.count || 0;
+    const lastContactCategory = previousRaw[0]
+      ? getCategoryLabel(previousRaw[0].category)
+      : null;
+    const strategyRecord = strategyRaw[0];
 
     // patternSummary: null for MVP (document explicitly says this is acceptable)
     const patternSummary = null;
@@ -280,30 +301,7 @@ async function getTicketHydration(req: any, res: any) {
       requiresProof: true, // Simplified proof workflow for MVP
     };
 
-    // Load response strategy if exists
     let strategy = null;
-    const strategyRaw = await sqlQuery`
-      SELECT
-        rs.summary,
-        rs.recommended_action as "recommendedAction",
-        rs.action_type as "actionType",
-        rs.matched_template_id as "matchedTemplateId",
-        (SELECT title FROM gold_responses WHERE id = rs.matched_template_id) as "matchedTemplateLabel",
-        rs.matched_template_confidence as "matchedTemplateConfidence",
-        rs.drivers,
-        rs.rationale,
-        rs.draft_tone as "draftTone",
-        rs.must_include as "mustInclude",
-        rs.must_avoid as "mustAvoid",
-        rs.customer_context as "customerContext",
-        rs.requires_management_approval as "requiresManagementApproval",
-        rs.management_escalation_reason as "managementEscalationReason"
-      FROM response_strategies rs
-      WHERE rs.ticket_id = ${ticketId}
-      LIMIT 1
-    `;
-    const strategyRecord = strategyRaw[0];
-
     if (strategyRecord) {
       strategy = {
         summary: strategyRecord.summary,
