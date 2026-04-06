@@ -52,6 +52,7 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
     isProofed: false,
     isDismissed: false
   });
+  const [localSentTicketIds, setLocalSentTicketIds] = useState<string[]>([]);
 
   // Focus management
   useEffect(() => {
@@ -148,6 +149,9 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
                   sharedState={consoleState}
                   onSharedStateChange={setConsoleState}
                   onApprove={(finalText) => {
+                    if (activeTicketId) {
+                      setLocalSentTicketIds(prev => [...prev, activeTicketId]);
+                    }
                     onNavigate(LEVEL_2_QUEUE, { categoryId: activeCategoryId ?? undefined });
                   }}
                 />
@@ -239,6 +243,8 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
                     tickets={activeQueue}
                     onBack={() => onNavigate(LEVEL_1_HUB)}
                     onTicketClick={(ticketId: string) => onNavigate(LEVEL_3_CONSOLE, { categoryId: activeCategoryId, ticketId })}
+                    sentTicketIds={localSentTicketIds}
+                    onDismissTicket={(id) => setLocalSentTicketIds(prev => prev.filter(t => t !== id))}
                   />
                 )}
               </div>

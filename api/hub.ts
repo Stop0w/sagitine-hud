@@ -1039,7 +1039,9 @@ async function dispatchTicket(req: any, res: any) {
     }
 
     const graphToken = await getGraphToken();
-    await sendViaGraph(graphToken, senderEmail, ctx.from_email, ctx.from_name || '', replySubject, final_message_sent);
+    // Ensure two blank lines before any quoted thread separator so Outlook renders cleanly
+    const htmlToSend = final_message_sent.replace(/(<hr\s*\/?>.*)?$/, '<br><br>$1');
+    await sendViaGraph(graphToken, senderEmail, ctx.from_email, ctx.from_name || '', replySubject, htmlToSend);
 
     // ── 4. UPDATE TICKET ─────────────────────────────────────────────────────
     await sql`

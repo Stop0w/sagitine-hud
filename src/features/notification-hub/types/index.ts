@@ -33,7 +33,7 @@ export interface QueueTicketItem {
   receivedAt: string;
   waitingMinutes: number;
   riskLevel: RiskLevel;
-  status: "new" | "triaged" | "drafted" | "review_required";
+  status: "new" | "triaged" | "drafted" | "review_required" | "sent";
 }
 
 export interface ResolutionConsoleData {

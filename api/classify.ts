@@ -270,13 +270,10 @@ function applyTOVCleanup(text: string): string {
   t = t.replace(/Unfortunately[,;\s]+/gi, '');
   t = t.replace(/\bdrawers?\b/gi, 'Box');
   t = t.replace(/\bunit\b/gi, 'Box');
-  // Enforce sign-off
-  if (!t.match(/Warm regards,?\s*\n\s*Heidi x/i)) {
-    t = t.replace(/Kind regards[^\n]*/gi, '');
-    t = t.replace(/Best regards[^\n]*/gi, '');
-    t = t.replace(/\bRegards[^\n]*/gi, '');
-    t = t.trimEnd() + '\n\nWarm regards,\nHeidi x';
-  }
+  // Always enforce the exact Sagitine sign-off — strip any variant the LLM may produce
+  // This catches "Warm regards, Sagitine Team", "Best regards, X", "Kind regards" etc.
+  t = t.replace(/\n+\s*(warm\s+regards|kind\s+regards|best\s+regards|regards|sincerely)[^\n]*(\n[^\n]+)?$/gi, '');
+  t = t.trimEnd() + '\n\nWarm regards,\nHeidi x';
   return t;
 }
 

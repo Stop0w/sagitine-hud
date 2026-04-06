@@ -15,10 +15,7 @@
  * 7. Return strategy for draft generation
  */
 
-import { db } from '../../src/db';
-import { tickets, inboundEmails, triageResults, customerProfiles, customerContactFacts } from '../../src/db/schema';
-import { goldResponses } from '../../src/db/schema/gold-responses';
-import { eq, and, desc, sql, or } from 'drizzle-orm';
+import { neon } from '@neondatabase/serverless';
 import Anthropic from '@anthropic-ai/sdk';
 
 const anthropic = new Anthropic({
@@ -320,63 +317,47 @@ async function matchTemplate(
   const actionType = determineActionType(ctx);
 
   // Query best-matching template (mustInclude/mustAvoid added)
-  const matches = await db
-    .select({
-      id: goldResponses.id,
-      title: goldResponses.title,
-      bodyTemplate: goldResponses.bodyTemplate,
-      category: goldResponses.category,
-      actionType: goldResponses.actionType,
-      appropriateUrgencyMin: goldResponses.appropriateUrgencyMin,
-      appropriateUrgencyMax: goldResponses.appropriateUrgencyMax,
-      appropriateRiskLevels: goldResponses.appropriateRiskLevels,
-      mustInclude: goldResponses.mustInclude,
-      mustAvoid: goldResponses.mustAvoid,
-    })
-    .from(goldResponses)
-    .where(
-      and(
-        eq(goldResponses.category, category as any),
-        eq(goldResponses.actionType, actionType as any),
-        eq(goldResponses.isActive, true),
-        // Urgency range filter
-        or(
-          sql`${goldResponses.appropriateUrgencyMin} IS NULL`,
-          sql`${urgency} >= ${goldResponses.appropriateUrgencyMin}`
-        ),
-        or(
-          sql`${goldResponses.appropriateUrgencyMax} IS NULL`,
-          sql`${urgency} <= ${goldResponses.appropriateUrgencyMax}`
-        ),
-        // Risk level filter
-        or(
-          sql`array_length(${goldResponses.appropriateRiskLevels}, 1) IS NULL`,
-          sql`${riskLevel} = ANY(${goldResponses.appropriateRiskLevels})`
-        )
-      )
-    )
-    .orderBy(desc(goldResponses.useCount)) // Prefer most-used templates
-    .limit(1);
+  const sqlQuery = neon(process.env.DATABASE_URL!);
+  
+  // Query best-matching template (mustInclude/mustAvoid added)
+  const matches = await sqlQuery`
+    SELECT
+      id,
+      title,
+      body_template as "bodyTemplate",
+      category,
+      action_type as "actionType",
+      appropriate_urgency_min as "appropriateUrgencyMin",
+      appropriate_urgency_max as "appropriateUrgencyMax",
+      appropriate_risk_levels as "appropriateRiskLevels",
+      must_include as "mustInclude",
+      must_avoid as "mustAvoid"
+    FROM gold_responses
+    WHERE category = ${category}
+      AND action_type = ${actionType}
+      AND is_active = true
+      AND (appropriate_urgency_min IS NULL OR ${urgency} >= appropriate_urgency_min)
+      AND (appropriate_urgency_max IS NULL OR ${urgency} <= appropriate_urgency_max)
+      AND (array_length(appropriate_risk_levels, 1) IS NULL OR ${riskLevel} = ANY(appropriate_risk_levels))
+    ORDER BY use_count DESC
+    LIMIT 1
+  `;
 
   if (matches.length === 0) {
     // No exact match: try category-only match (fallback)
-    const fallbackMatches = await db
-      .select({
-        id: goldResponses.id,
-        title: goldResponses.title,
-        bodyTemplate: goldResponses.bodyTemplate,
-        mustInclude: goldResponses.mustInclude,
-        mustAvoid: goldResponses.mustAvoid,
-      })
-      .from(goldResponses)
-      .where(
-        and(
-          eq(goldResponses.category, category as any),
-          eq(goldResponses.isActive, true)
-        )
-      )
-      .orderBy(desc(goldResponses.useCount))
-      .limit(1);
+    const fallbackMatches = await sqlQuery`
+      SELECT
+        id,
+        title,
+        body_template as "bodyTemplate",
+        must_include as "mustInclude",
+        must_avoid as "mustAvoid"
+      FROM gold_responses
+      WHERE category = ${category}
+        AND is_active = true
+      ORDER BY use_count DESC
+      LIMIT 1
+    `;
 
     if (fallbackMatches.length > 0) {
       return {
@@ -723,31 +704,33 @@ Return a concise summary only (no preamble, no JSON). Example:
  */
 export async function generateResponseStrategy(ticketId: string): Promise<ResponseStrategy> {
   // 1. Load context
-  const [ticketData] = await db
-    .select({
-      ticket_id: tickets.id,
-      category: triageResults.categoryPrimary,
-      urgency: triageResults.urgency,
-      riskLevel: triageResults.riskLevel,
-      confidence: triageResults.confidence,
-      customer_email: inboundEmails.fromEmail,
-      customer_name: inboundEmails.fromName,
-      subject: inboundEmails.subject,
-      bodyPlain: inboundEmails.bodyPlain,
-      receivedAt: inboundEmails.receivedAt,
-      is_repeat_contact: customerProfiles.isRepeatContact,
-      is_high_attention_customer: customerProfiles.isHighAttentionCustomer,
-      total_contact_count: customerProfiles.totalContactCount,
-      last_contact_category: customerProfiles.lastContactCategory,
-      shopify_order_count: customerProfiles.shopifyOrderCount,
-      shopify_ltv: customerProfiles.shopifyLtv,
-    })
-    .from(tickets)
-    .innerJoin(triageResults, eq(tickets.triageResultId, triageResults.id))
-    .innerJoin(inboundEmails, eq(tickets.emailId, inboundEmails.id))
-    .leftJoin(customerProfiles, eq(inboundEmails.fromEmail, customerProfiles.email))
-    .where(eq(tickets.id, ticketId))
-    .limit(1);
+  const sqlQuery = neon(process.env.DATABASE_URL!);
+  const ticketDataRaw = await sqlQuery`
+    SELECT
+      t.id as ticket_id,
+      tr.category_primary as category,
+      tr.urgency,
+      tr.risk_level as "riskLevel",
+      tr.confidence,
+      ie.from_email as customer_email,
+      ie.from_name as customer_name,
+      ie.subject,
+      ie.body_plain as "bodyPlain",
+      ie.received_at as "receivedAt",
+      cp.is_repeat_contact as is_repeat_contact,
+      cp.is_high_attention_customer as is_high_attention_customer,
+      cp.total_contact_count as total_contact_count,
+      cp.last_contact_category as last_contact_category,
+      cp.shopify_order_count as shopify_order_count,
+      cp.shopify_ltv as shopify_ltv
+    FROM tickets t
+    INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+    INNER JOIN inbound_emails ie ON t.email_id = ie.id
+    LEFT JOIN customer_profiles cp ON ie.from_email = cp.email
+    WHERE t.id = ${ticketId}
+    LIMIT 1
+  `;
+  const ticketData = ticketDataRaw[0];
 
   if (!ticketData) {
     throw new Error(`Ticket not found: ${ticketId}`);
@@ -843,26 +826,32 @@ export async function generateResponseStrategy(ticketId: string): Promise<Respon
   }
 
   // 12. Persist to response_strategies table
-  await db.insert(require('../../src/db/schema/gold-responses').responseStrategies).values({
-    ticketId,
-    summary: strategy.summary,
-    recommendedAction: strategy.recommendedAction,
-    actionType: strategy.actionType,
-    matchedTemplateId: strategy.matchedTemplateId,
-    matchedTemplateConfidence: strategy.matchedTemplateConfidence,
-    drivers: strategy.drivers,
-    rationale: strategy.rationale,
-    draftTone: strategy.draftTone,
-    mustInclude: strategy.mustInclude,
-    mustAvoid: strategy.mustAvoid,
-    customerContext: strategy.customerContext,
-    // Management escalation guardrail (pre-launch safety)
-    requiresManagementApproval: strategy.requiresManagementApproval,
-    managementEscalationReason: strategy.managementEscalationReason,
-    // Audit
-    strategySource: 'deterministic',
-    generatedBy: 'response_strategy_service',
-  });
+  await sqlQuery`
+    INSERT INTO response_strategies (
+      ticket_id, summary, recommended_action, action_type,
+      matched_template_id, matched_template_confidence, drivers,
+      rationale, draft_tone, must_include, must_avoid,
+      customer_context, requires_management_approval,
+      management_escalation_reason, strategy_source, generated_by
+    ) VALUES (
+      ${ticketId},
+      ${strategy.summary},
+      ${strategy.recommendedAction},
+      ${strategy.actionType},
+      ${strategy.matchedTemplateId},
+      ${strategy.matchedTemplateConfidence},
+      ${JSON.stringify(strategy.drivers)},
+      ${strategy.rationale},
+      ${strategy.draftTone},
+      ${JSON.stringify(strategy.mustInclude)},
+      ${JSON.stringify(strategy.mustAvoid)},
+      ${JSON.stringify(strategy.customerContext)},
+      ${strategy.requiresManagementApproval},
+      ${strategy.managementEscalationReason},
+      'deterministic',
+      'response_strategy_service'
+    )
+  `;
 
   return strategy;
 }

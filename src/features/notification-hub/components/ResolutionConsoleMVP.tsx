@@ -400,10 +400,15 @@ export function ResolutionConsoleMVP({
 
             {/* Outlook Button */}
             <div className="px-5 mt-auto pb-6 pt-4">
-              <button className="w-full py-2.5 px-4 bg-white border border-[#0078D4] text-[#0078D4] hover:bg-[#0078D4]/5 rounded font-label text-[11px] font-bold uppercase tracking-wide transition-colors flex items-center justify-center gap-2 group shadow-sm">
+              <a
+                href={`https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(customer.email)}&subject=${encodeURIComponent(message.subject?.startsWith('Re:') ? message.subject : `Re: ${message.subject}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 px-4 bg-white border border-[#0078D4] text-[#0078D4] hover:bg-[#0078D4]/5 rounded font-label text-[11px] font-bold uppercase tracking-wide transition-colors flex items-center justify-center gap-2 group shadow-sm"
+              >
                 Open in Outlook
                 <span className="material-symbols-outlined !text-[14px] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">north_east</span>
-              </button>
+              </a>
             </div>
           </div>
         )}
