@@ -920,6 +920,75 @@ async function resolveTicketManually(req: any, res: any) {
  * Marks ticket as sent in DB, writes send audit, and calls Make.com webhook
  * (MAKE_SEND_WEBHOOK_URL) if configured so Make.com can send via Outlook.
  */
+// ============================================================================
+// MICROSOFT GRAPH HELPERS
+// ============================================================================
+
+async function getGraphToken(): Promise<string> {
+  const tenantId = process.env.MICROSOFT_TENANT_ID!;
+  const clientId = process.env.MICROSOFT_CLIENT_ID!;
+  const clientSecret = process.env.MICROSOFT_CLIENT_SECRET!;
+
+  const response = await fetch(
+    `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: clientId,
+        client_secret: clientSecret,
+        scope: 'https://graph.microsoft.com/.default',
+      }).toString(),
+    }
+  );
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Graph token error: ${err}`);
+  }
+
+  const data: any = await response.json();
+  return data.access_token;
+}
+
+async function sendViaGraph(
+  token: string,
+  senderEmail: string,
+  toEmail: string,
+  toName: string,
+  subject: string,
+  htmlBody: string
+): Promise<void> {
+  const response = await fetch(
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(senderEmail)}/sendMail`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: {
+          subject,
+          body: { contentType: 'HTML', content: htmlBody },
+          toRecipients: [{ emailAddress: { address: toEmail, name: toName || toEmail } }],
+        },
+        saveToSentItems: true,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Graph sendMail error (${response.status}): ${err}`);
+  }
+}
+
+// ============================================================================
+// POST /api/hub/ticket/:id/dispatch - Send from HUD via Microsoft Graph
+// ============================================================================
+
 async function dispatchTicket(req: any, res: any) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
@@ -930,42 +999,69 @@ async function dispatchTicket(req: any, res: any) {
     }
 
     const { final_message_sent } = req.body || {};
+    if (!final_message_sent) {
+      return res.status(400).json({ success: false, error: 'final_message_sent is required', timestamp: new Date().toISOString() });
+    }
+
     const sql = neon(process.env.DATABASE_URL!);
 
-    // Fetch ticket context for audit
+    // ── 1. FETCH TICKET CONTEXT ──────────────────────────────────────────────
     const ticketContextRaw = await sql`
-      SELECT t.id, t.send_status, t.human_edited, t.human_edited_body,
-             tr.reply_body, tr.confidence, tr.category_primary
+      SELECT
+        t.id, t.send_status, t.email_id,
+        t.approved_at, t.created_at,
+        tr.reply_body, tr.confidence, tr.category_primary, tr.reply_subject,
+        ie.from_email, ie.from_name, ie.subject, ie.source_thread_id,
+        ie.received_at as email_received_at
       FROM tickets t
       INNER JOIN triage_results tr ON t.triage_result_id = tr.id
+      INNER JOIN inbound_emails ie ON t.email_id = ie.id
       WHERE t.id = ${ticketId}
       LIMIT 1
     `;
-    const ticketCtx = ticketContextRaw[0];
+    const ctx = ticketContextRaw[0];
 
-    if (!ticketCtx) {
+    if (!ctx) {
       return res.status(404).json({ success: false, error: 'Ticket not found', timestamp: new Date().toISOString() });
     }
 
-    // Guard against double-send
-    if (ticketCtx.send_status === 'sent') {
-      return res.status(409).json({ success: false, error: 'Ticket already sent', timestamp: new Date().toISOString() });
+    // ── 2. GUARD: DOUBLE-SEND PROTECTION ────────────────────────────────────
+    if (ctx.send_status === 'sent') {
+      return res.status(409).json({ success: false, error: 'Already sent', timestamp: new Date().toISOString() });
     }
 
-    // Mark ticket as sent
+    // ── 3. SEND VIA MICROSOFT GRAPH ─────────────────────────────────────────
+    const senderEmail = process.env.MICROSOFT_SENDER_EMAIL!;
+    const replySubject = ctx.reply_subject || (ctx.subject?.startsWith('Re:') ? ctx.subject : `Re: ${ctx.subject}`);
+
+    if (!process.env.MICROSOFT_TENANT_ID || !process.env.MICROSOFT_CLIENT_ID || !process.env.MICROSOFT_CLIENT_SECRET || !senderEmail) {
+      throw new Error('Microsoft Graph env vars not configured (MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET, MICROSOFT_SENDER_EMAIL)');
+    }
+
+    const graphToken = await getGraphToken();
+    await sendViaGraph(graphToken, senderEmail, ctx.from_email, ctx.from_name || '', replySubject, final_message_sent);
+
+    // ── 4. UPDATE TICKET ─────────────────────────────────────────────────────
     await sql`
       UPDATE tickets
-      SET send_status = 'sent', sent_at = NOW(), status = 'approved',
-          human_edited = true, human_edited_body = ${final_message_sent || null}
+      SET send_status = 'sent',
+          sent_at     = NOW(),
+          status      = 'approved',
+          human_edited      = true,
+          human_edited_body = ${final_message_sent}
       WHERE id = ${ticketId}
     `;
 
-    // Persist send audit
+    // ── 5. WRITE SEND AUDIT ──────────────────────────────────────────────────
     const recentProofRaw = await sql`
       SELECT id FROM draft_proofs WHERE ticket_id = ${ticketId}
       ORDER BY proofed_at DESC LIMIT 1
     `;
     const recentProof = recentProofRaw[0];
+
+    const responseTimeMinutes = ctx.email_received_at
+      ? Math.floor((Date.now() - new Date(ctx.email_received_at).getTime()) / 60000)
+      : null;
 
     await sql`
       INSERT INTO send_audit (
@@ -973,9 +1069,9 @@ async function dispatchTicket(req: any, res: any) {
         was_human_edited, was_proofed, resolution_mechanism, proof_id, sent_at
       ) VALUES (
         ${ticketId},
-        ${ticketCtx.reply_body || ''},
-        ${final_message_sent || ''},
-        ${ticketCtx.confidence},
+        ${ctx.reply_body || ''},
+        ${final_message_sent},
+        ${ctx.confidence},
         ${true},
         ${!!recentProof},
         ${recentProof ? 'human_proofed' : 'human_edited'},
@@ -984,31 +1080,57 @@ async function dispatchTicket(req: any, res: any) {
       )
     `;
 
-    // Call Make.com webhook if configured (triggers Outlook send)
-    const makeWebhookUrl = process.env.MAKE_SEND_WEBHOOK_URL;
-    let webhookCalled = false;
-    if (makeWebhookUrl) {
-      try {
-        await fetch(makeWebhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ticket_id: ticketId, final_message_sent }),
-        });
-        webhookCalled = true;
-      } catch (e: any) {
-        console.error('Make.com webhook call failed:', e?.message);
-        // Don't fail the overall request — ticket is already marked sent in DB
-      }
+    // ── 6. CRM: OUTBOUND CONTACT FACT + UPDATE CUSTOMER PROFILE ─────────────
+    const profileRaw = await sql`
+      SELECT id, total_contact_count
+      FROM customer_profiles
+      WHERE email = ${ctx.from_email.toLowerCase()}
+      LIMIT 1
+    `;
+    const profile = profileRaw[0];
+
+    if (profile) {
+      await sql`
+        INSERT INTO customer_contact_facts (
+          customer_profile_id, ticket_id, channel, direction,
+          contact_at, response_time_minutes, created_at
+        ) VALUES (
+          ${profile.id}, ${ticketId}, 'email', 'outbound',
+          NOW(), ${responseTimeMinutes}, NOW()
+        )
+      `;
+
+      await sql`
+        UPDATE customer_profiles
+        SET last_contact_at       = NOW(),
+            last_contact_channel  = 'email',
+            last_contact_category = ${ctx.category_primary},
+            updated_at            = NOW()
+        WHERE id = ${profile.id}
+      `;
     }
 
+    // ── 7. RESPOND ───────────────────────────────────────────────────────────
     return res.status(200).json({
       success: true,
-      data: { ticket_id: ticketId, send_status: 'sent', webhook_called: webhookCalled },
+      data: {
+        ticket_id: ticketId,
+        send_status: 'sent',
+        to: ctx.from_email,
+        subject: replySubject,
+        response_time_minutes: responseTimeMinutes,
+        crm_updated: !!profile,
+      },
       timestamp: new Date().toISOString(),
     });
+
   } catch (error: any) {
     console.error('POST /api/hub/ticket/:id/dispatch error:', error);
-    return res.status(500).json({ success: false, error: error.message, timestamp: new Date().toISOString() });
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
   }
 }
 
