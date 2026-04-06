@@ -5,36 +5,34 @@ import type { HubView } from "../types";
 interface HubHeaderProps {
   currentView: HubView;
   onClose: () => void;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
 }
 
-export function HubHeader({ currentView, onClose }: HubHeaderProps) {
+export function HubHeader({ currentView, onClose, isExpanded, onToggleExpand }: HubHeaderProps) {
   return (
-    <header className="flex justify-between items-center w-full px-4 h-14 bg-zinc-50 border-b border-outline-variant">
+    <header className="flex justify-between items-center w-full px-4 h-14 bg-zinc-50 border-b border-outline-variant flex-shrink-0">
       <div className="flex items-center gap-2">
         <span className="font-serif italic text-xl text-zinc-900">Sagitine CX</span>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1">
         <button
-          className="text-zinc-500 hover:bg-zinc-200 p-1 transition-all active:opacity-80"
-          aria-label="Minimize"
-          onClick={(e) => {
-            e.preventDefault();
-            // Minimize functionality can be added later
-          }}
+          onClick={onToggleExpand}
+          className="text-zinc-500 hover:bg-zinc-200 p-1.5 rounded transition-all active:opacity-80"
+          aria-label={isExpanded ? 'Collapse to panel' : 'Expand to full screen'}
+          title={isExpanded ? 'Collapse' : 'Expand'}
         >
-          <span className="material-symbols-outlined !text-[18px]" data-icon="minimize">
-            minimize
+          <span className="material-symbols-outlined !text-[18px]">
+            {isExpanded ? 'close_fullscreen' : 'open_in_full'}
           </span>
         </button>
         <button
           data-close-button
           onClick={onClose}
-          className="text-zinc-500 hover:bg-zinc-200 p-1 transition-all active:opacity-80"
+          className="text-zinc-500 hover:bg-zinc-200 p-1.5 rounded transition-all active:opacity-80"
           aria-label="Close notifications hub"
         >
-          <span className="material-symbols-outlined !text-[18px]" data-icon="close">
-            close
-          </span>
+          <span className="material-symbols-outlined !text-[18px]">close</span>
         </button>
       </div>
     </header>

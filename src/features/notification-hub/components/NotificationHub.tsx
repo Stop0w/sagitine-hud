@@ -141,7 +141,12 @@ export const NotificationHub: React.FC<NotificationHubProps> = ({
           )}
 
           {/* HEADER */}
-          <HubHeader currentView={currentView} onClose={onClose} />
+          <HubHeader
+            currentView={currentView}
+            onClose={onClose}
+            isExpanded={isExpanded}
+            onToggleExpand={() => setIsExpanded(!isExpanded)}
+          />
 
           {/* MAIN CONTENT AREA */}
           <main className="flex-grow overflow-hidden relative bg-white">
