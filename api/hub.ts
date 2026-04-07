@@ -1310,31 +1310,30 @@ async function dispatchTicket(req: any, res: any) {
 
     const graphToken = await getGraphToken();
 
-    // Wrap the operator's final message in an HTML envelope
-    const htmlToSend = `<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body>${final_message_sent}</body></html>`;
+    // Build reply body: operator's response + Outlook-style quoted original thread.
+    // Required for BOTH reply and sendMail paths — Graph's /reply endpoint replaces
+    // message.body entirely, it does NOT auto-append the original thread.
+    let fullReplyHtml = final_message_sent;
+    if (ctx.original_body_html) {
+      const sentDate = new Date(ctx.email_received_at).toLocaleString('en-AU', {
+        day: 'numeric', month: 'long', year: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true
+      });
+      const replyHeader = `<div style="padding:4px 0"><b>From:</b> ${ctx.from_name || ctx.from_email} &lt;${ctx.from_email}&gt;<br><b>Sent:</b> ${sentDate}<br><b>To:</b> info &lt;${senderEmail}&gt;<br><b>Subject:</b> ${ctx.subject}<br></div>`;
+      fullReplyHtml += `<br><br><hr style="display:inline-block;width:98%">${replyHeader}<blockquote style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">${ctx.original_body_html}</blockquote>`;
+    }
+    const wrappedHtml = `<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body>${fullReplyHtml}</body></html>`;
 
     // Use Graph Reply API if we have the original Outlook message ID.
-    // This threads the reply into the original conversation automatically:
+    // This threads the reply into the original conversation:
     // - Sets In-Reply-To / References headers
     // - Adds "Re:" subject prefix
-    // - Includes the full conversation thread
     // - Appears as a reply in the customer's inbox
     // Falls back to sendMail (new email) if source_message_id is unavailable.
     if (ctx.source_message_id) {
-      await replyViaGraph(graphToken, senderEmail, ctx.source_message_id, htmlToSend);
+      await replyViaGraph(graphToken, senderEmail, ctx.source_message_id, wrappedHtml);
     } else {
-      // Fallback: no original message ID — send as new email with quoted original
-      let fallbackHtml = final_message_sent;
-      if (ctx.original_body_html) {
-        const sentDate = new Date(ctx.email_received_at).toLocaleString('en-AU', {
-          day: 'numeric', month: 'long', year: 'numeric',
-          hour: 'numeric', minute: '2-digit', hour12: true
-        });
-        const replyHeader = `<div style="padding:4px 0"><b>From:</b> ${ctx.from_name || ctx.from_email} &lt;${ctx.from_email}&gt;<br><b>Sent:</b> ${sentDate}<br><b>To:</b> info &lt;${senderEmail}&gt;<br><b>Subject:</b> ${ctx.subject}<br></div>`;
-        fallbackHtml += `<br><br><hr style="display:inline-block;width:98%">${replyHeader}<blockquote style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">${ctx.original_body_html}</blockquote>`;
-      }
-      const wrappedFallback = `<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body>${fallbackHtml}</body></html>`;
-      await sendViaGraph(graphToken, senderEmail, ctx.from_email, ctx.from_name || '', replySubject, wrappedFallback);
+      await sendViaGraph(graphToken, senderEmail, ctx.from_email, ctx.from_name || '', replySubject, wrappedHtml);
     }
 
     // ── 4. UPDATE TICKET ─────────────────────────────────────────────────────
