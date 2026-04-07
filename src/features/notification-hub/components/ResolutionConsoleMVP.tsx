@@ -650,7 +650,7 @@ export function ResolutionConsoleMVP({
             </div>
           </div>
 
-          <div className="flex-grow p-4 overflow-y-auto">
+          <div className="flex-grow p-4 overflow-y-auto flex flex-col min-h-0">
 
             {/* SENT CONFIRMATION */}
             {proofState === 'sent' ? (
@@ -681,12 +681,12 @@ export function ResolutionConsoleMVP({
                   <textarea
                     value={editedResponse}
                     onChange={handleTextChange}
-                    className="w-full h-[260px] p-4 bg-white border border-tertiary/40 rounded-md font-body text-[14px] text-on-surface leading-relaxed focus:outline-none focus:ring-2 focus:ring-tertiary/70 focus:border-transparent resize-none shadow-sm"
+                    className="w-full flex-grow min-h-[200px] p-4 bg-white border border-tertiary/40 rounded-md font-body text-[14px] text-on-surface leading-relaxed focus:outline-none focus:ring-2 focus:ring-tertiary/70 focus:border-transparent resize-none shadow-sm"
                     placeholder="Edit your response here..."
                   />
                 ) : (
                   <div
-                    className="prose prose-sm max-w-none [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:text-gray-600 [&_hr]:my-4 [&_p]:mb-3"
+                    className="flex-grow prose prose-sm max-w-none [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:text-gray-600 [&_hr]:my-4 [&_p]:mb-3"
                     dangerouslySetInnerHTML={{ __html: plainTextToHtml(editedResponse) || triage.draftResponse || '' }}
                   />
                 )}
