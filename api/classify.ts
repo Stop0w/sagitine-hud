@@ -316,6 +316,20 @@ async function generatePersonalisedReply(
 
     const templateBody: string | null = templates.length > 0 ? templates[0].body_template : null;
 
+    // Fetch recent learning signals — past operator corrections for this category
+    const recentSignals = await sql`
+      SELECT original_draft, final_draft, operator_feedback_text
+      FROM learning_signals
+      WHERE original_category = ${category}
+      AND created_at > NOW() - INTERVAL '30 days'
+      ORDER BY created_at DESC
+      LIMIT 3
+    `;
+
+    const learningContext = recentSignals.length > 0
+      ? `\nPAST OPERATOR CORRECTIONS FOR THIS CATEGORY (learn from these patterns):\n${recentSignals.map((s: any) => `- ${s.operator_feedback_text ? `Feedback: "${s.operator_feedback_text}"` : `AI draft was revised significantly by operator`}`).join('\n')}\n`
+      : '';
+
     const prompt = `Generate a customer service email response for Sagitine, a premium Australian storage brand.
 
 CUSTOMER:
@@ -326,7 +340,7 @@ Message: ${bodyPlain.substring(0, 800)}
 ${templateBody ? `REFERENCE TEMPLATE (adapt this — do not copy exactly):
 ${templateBody}
 
-` : ''}SAGITINE TONE OF VOICE:
+` : ''}${learningContext}SAGITINE TONE OF VOICE:
 - Calm, warm, polished, quietly premium
 - Never apologise — use "Thank you for letting me know" or "Thank you for reaching out"
 - Never use "Unfortunately", "I'm sorry", "We apologise"

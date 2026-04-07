@@ -26,14 +26,9 @@ function applySagitineTOVCleanup(text: string): string {
   cleaned = cleaned.replace(/That's awesome/gi, "That's great");
   cleaned = cleaned.replace(/Super[,;\s]+/gi, 'Very ');
   cleaned = cleaned.replace(/Hey[,;\s]+\w+/gi, 'Hi');
-  cleaned = cleaned.replace(/Regards[,\s]*/gi, 'Warm regards, ');
-  cleaned = cleaned.replace(/Best regards[,\s]*/gi, 'Warm regards, ');
-  cleaned = cleaned.replace(/Kind regards[,\s]*/gi, 'Warm regards, ');
-  if (!cleaned.match(/Warm regards,\s*Heidi x/i)) {
-    cleaned = cleaned.replace(/Regards[^\n]+/gi, '');
-    cleaned = cleaned.replace(/Best[^\n]+/gi, '');
-    cleaned = cleaned.trimEnd() + '\n\nWarm regards,\nHeidi x';
-  }
+  // Strip ALL sign-off variants (any "Regards" line + optional "Heidi x" line after it)
+  cleaned = cleaned.replace(/\n*\s*(Warm regards|Kind regards|Best regards|Regards|Best)[,\s]*\n?\s*(Heidi\s*x?)?\s*/gi, '');
+  cleaned = cleaned.trimEnd() + '\n\nWarm regards,\nHeidi x';
   return cleaned;
 }
 
@@ -690,6 +685,7 @@ CONTEXT:
 CURRENT DRAFT TO PROOF:
 ${draftText}
 
+- CRITICAL: Check for duplicate sign-offs (e.g. "Warm regards, Heidi x" appearing more than once). If found, flag as type "duplication", severity "high".
 ${generateTOVProofingChecklist()}
 
 Return strict JSON only:
@@ -838,6 +834,148 @@ Return strict JSON only:
     }
   } catch (error: any) {
     console.error('POST /api/hub/ticket/:id/proof error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Unknown error',
+      timestamp: new Date().toISOString(),
+    });
+  }
+}
+
+// ============================================================================
+// POST /api/hub/ticket/:id/regenerate - Operator Feedback Draft Regeneration
+// ============================================================================
+
+/**
+ * Operator provides natural language feedback on the current draft.
+ * Claude Haiku regenerates the draft using the feedback, original email context,
+ * and gold responses for the (possibly corrected) category.
+ * Stores feedback in operator_feedback table for self-learning (B2).
+ */
+async function regenerateTicketDraft(req: any, res: any) {
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const ticketId = url.pathname.split('/').slice(0, -1).pop();
+
+    if (!ticketId) {
+      return res.status(400).json({ success: false, error: 'Missing ticket ID', timestamp: new Date().toISOString() });
+    }
+
+    const { feedbackText, currentDraft, currentCategory } = req.body || {};
+
+    if (!feedbackText) {
+      return res.status(400).json({ success: false, error: 'feedbackText is required', timestamp: new Date().toISOString() });
+    }
+
+    const sql = neon(process.env.DATABASE_URL!);
+
+    // Fetch original email context
+    const ticketRows = await sql`
+      SELECT ie.from_name, ie.from_email, ie.subject, ie.body_plain, ie.body_html,
+             tr.category_primary, tr.customer_intent_summary, tr.reply_body,
+             cp.name as customer_name, cp.total_contact_count, cp.shopify_order_count
+      FROM tickets t
+      JOIN inbound_emails ie ON t.email_id = ie.id
+      JOIN triage_results tr ON t.triage_result_id = tr.id
+      LEFT JOIN customer_profiles cp ON ie.from_email = cp.email
+      WHERE t.id = ${ticketId}
+      LIMIT 1
+    `;
+
+    if (ticketRows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Ticket not found', timestamp: new Date().toISOString() });
+    }
+
+    const ctx = ticketRows[0];
+    const effectiveCategory = currentCategory || ctx.category_primary;
+
+    // Fetch gold responses for the (possibly corrected) category
+    const goldResponses = await sql`
+      SELECT response_text FROM gold_responses
+      WHERE category = ${effectiveCategory}
+      ORDER BY created_at DESC LIMIT 3
+    `;
+
+    const goldContext = goldResponses.length > 0
+      ? `\n\nAPPROVED RESPONSE EXAMPLES FOR THIS CATEGORY:\n${goldResponses.map((g: any) => g.response_text).join('\n---\n')}`
+      : '';
+
+    // Fetch recent learning signals for this category (self-learning context)
+    const recentCorrections = await sql`
+      SELECT original_draft, regenerated_draft, feedback_text
+      FROM operator_feedback
+      WHERE original_category = ${effectiveCategory}
+      AND created_at > NOW() - INTERVAL '30 days'
+      ORDER BY created_at DESC
+      LIMIT 3
+    `;
+
+    const correctionsContext = recentCorrections.length > 0
+      ? `\n\nPAST OPERATOR CORRECTIONS FOR THIS CATEGORY (learn from these):\n${recentCorrections.map((c: any) => `- Feedback: "${c.feedback_text}" → Draft was revised accordingly`).join('\n')}`
+      : '';
+
+    const prompt = `You are a customer service writer for Sagitine, a premium Australian storage box brand.
+
+ORIGINAL CUSTOMER EMAIL:
+From: ${ctx.from_name} <${ctx.from_email}>
+Subject: ${ctx.subject}
+Body: ${(ctx.body_plain || '').substring(0, 1500)}
+
+CURRENT AI DRAFT (needs revision):
+${currentDraft || ctx.reply_body}
+
+OPERATOR FEEDBACK — THIS IS THE MOST IMPORTANT INPUT. Follow these instructions precisely:
+${feedbackText}
+${goldContext}${correctionsContext}
+
+TONE OF VOICE RULES:
+- Never apologise — use "Thank you for letting me know" / "Thank you for reaching out"
+- Never use "Unfortunately", "I'm sorry", "We apologise"
+- Always use "Box" or "Boxes" — never "drawer", "unit", or "item"
+- Sign-off is always exactly: Warm regards,\\nHeidi x
+- Tone: calm, warm, polished, quietly premium — never gushy or corporate
+- Australian English: colour, optimise, organise
+
+Write a complete revised email response incorporating the operator's feedback. Return ONLY the email text, no JSON wrapper, no explanations.`;
+
+    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY!,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!anthropicRes.ok) {
+      const errText = await anthropicRes.text();
+      throw new Error(`Anthropic API error (${anthropicRes.status}): ${errText}`);
+    }
+
+    const anthropicData = await anthropicRes.json();
+    let regeneratedDraft = anthropicData.content?.[0]?.text || '';
+
+    // Apply deterministic TOV cleanup
+    regeneratedDraft = applySagitineTOVCleanup(regeneratedDraft);
+
+    // Store feedback for self-learning
+    await sql`
+      INSERT INTO operator_feedback (ticket_id, feedback_text, original_category, suggested_category, original_draft, regenerated_draft)
+      VALUES (${ticketId}, ${feedbackText}, ${ctx.category_primary}, ${effectiveCategory}, ${currentDraft || ctx.reply_body}, ${regeneratedDraft})
+    `;
+
+    return res.status(200).json({
+      success: true,
+      data: { regeneratedDraft, appliedCategory: effectiveCategory },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error('POST /api/hub/ticket/:id/regenerate error:', error);
     return res.status(500).json({
       success: false,
       error: error.message || 'Unknown error',
@@ -1043,10 +1181,18 @@ async function dispatchTicket(req: any, res: any) {
     // Re-append the original inbound email as a quoted thread.
     // htmlToPlainText() strips <hr><blockquote> so the operator only edits the reply body.
     // We restore it here using the raw body_html from inbound_emails so Outlook shows the full thread.
+    // The From/Sent/To/Subject header block matches what Outlook generates natively.
     let htmlToSend = final_message_sent;
     if (ctx.original_body_html) {
-      htmlToSend += `<br><br><hr><blockquote style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">${ctx.original_body_html}</blockquote>`;
+      const sentDate = new Date(ctx.email_received_at).toLocaleString('en-AU', {
+        day: 'numeric', month: 'long', year: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true
+      });
+      const replyHeader = `<div style="padding:4px 0"><b>From:</b> ${ctx.from_name || ctx.from_email} &lt;${ctx.from_email}&gt;<br><b>Sent:</b> ${sentDate}<br><b>To:</b> info &lt;${senderEmail}&gt;<br><b>Subject:</b> ${ctx.subject}<br></div>`;
+      htmlToSend += `<br><br><hr style="display:inline-block;width:98%">${replyHeader}<blockquote style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">${ctx.original_body_html}</blockquote>`;
     }
+    // Wrap in HTML envelope for Outlook compatibility
+    htmlToSend = `<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body>${htmlToSend}</body></html>`;
     await sendViaGraph(graphToken, senderEmail, ctx.from_email, ctx.from_name || '', replySubject, htmlToSend);
 
     // ── 4. UPDATE TICKET ─────────────────────────────────────────────────────
@@ -1087,6 +1233,38 @@ async function dispatchTicket(req: any, res: any) {
         NOW()
       )
     `;
+
+    // ── 5b. LEARNING SIGNAL: compare original draft vs final sent ──────────
+    if (ctx.reply_body) {
+      const origPlain = (ctx.reply_body || '').replace(/<[^>]+>/g, '').trim();
+      const finalPlain = final_message_sent.replace(/<[^>]+>/g, '').trim();
+      // Word-level similarity ratio
+      const wordsA = new Set(origPlain.toLowerCase().split(/\s+/).filter(Boolean));
+      const wordsB = new Set(finalPlain.toLowerCase().split(/\s+/).filter(Boolean));
+      const union = new Set([...wordsA, ...wordsB]);
+      const intersection = [...wordsA].filter(w => wordsB.has(w));
+      const editRatio = union.size > 0 ? +(1 - intersection.length / union.size).toFixed(4) : 0;
+
+      if (editRatio > 0.15) {
+        // Significant edit — store learning signal
+        // Also grab any operator feedback for this ticket
+        const feedbackRows = await sql`
+          SELECT feedback_text FROM operator_feedback
+          WHERE ticket_id = ${ticketId}
+          ORDER BY created_at DESC LIMIT 1
+        `;
+        await sql`
+          INSERT INTO learning_signals (
+            ticket_id, signal_type, original_category, original_draft,
+            final_draft, edit_distance_ratio, operator_feedback_text
+          ) VALUES (
+            ${ticketId}, 'content_rewrite', ${ctx.category_primary},
+            ${origPlain.substring(0, 2000)}, ${finalPlain.substring(0, 2000)},
+            ${editRatio}, ${feedbackRows[0]?.feedback_text || null}
+          )
+        `;
+      }
+    }
 
     // ── 6. CRM: OUTBOUND CONTACT FACT + UPDATE CUSTOMER PROFILE ─────────────
     const profileRaw = await sql`
@@ -1187,6 +1365,11 @@ export default async function handler(req: any, res: any) {
   // POST /api/hub/ticket/:id/proof - Real proof endpoint
   if (req.method === 'POST' && pathname.match(/^\/api\/hub\/ticket\/[^/]+\/proof$/)) {
     return proofTicketDraft(req, res);
+  }
+
+  // POST /api/hub/ticket/:id/regenerate - Operator feedback draft regeneration
+  if (req.method === 'POST' && pathname.match(/^\/api\/hub\/ticket\/[^/]+\/regenerate$/)) {
+    return regenerateTicketDraft(req, res);
   }
 
   // POST /api/hub/ticket/:id/dispatch - Send from HUD

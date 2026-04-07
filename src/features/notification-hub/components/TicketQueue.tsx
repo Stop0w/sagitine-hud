@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { QueueTicketItem, UrgencyLevel } from '../types';
+import { formatWaitTime } from '../../../lib/data-transformer';
 
 interface TicketQueueProps {
   categoryId: string;
@@ -291,7 +292,7 @@ export function TicketQueue({ categoryId, tickets, onTicketClick, onBack, sentTi
                         {ticket.urgency.toUpperCase()}
                       </span>
                       <span className="font-label text-[9px] text-zinc-400">
-                        {ticket.waitingMinutes}m
+                        {formatWaitTime(ticket.waitingMinutes)}
                       </span>
                     </div>
 

@@ -1,6 +1,7 @@
 // src/features/notification-hub/components/ResolutionConsoleMVP.tsx
 
 import React, { useState } from 'react';
+import { formatWaitTime } from '../../../lib/data-transformer';
 
 // Strip HTML to plain text for editing — removes quoted original email too
 function htmlToPlainText(html: string): string {
@@ -64,6 +65,11 @@ export function ResolutionConsoleMVP({
   const [hasEverBeenEdited, setHasEverBeenEdited] = useState(false);
   const [lastProofedDraft, setLastProofedDraft] = useState<string>('');
 
+  // Feedback / Regeneration state
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
   // 1. Invalidation Flow
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
@@ -82,6 +88,35 @@ export function ResolutionConsoleMVP({
       setEditedResponse(triage.draftResponse || '');
     }
     setIsEditing(!isEditing);
+  };
+
+  // 1b. Regenerate from operator feedback
+  const executeRegenerate = async () => {
+    if (!feedbackText.trim()) return;
+    setIsRegenerating(true);
+    try {
+      const res = await fetch(`/api/hub/ticket/${ticket.id}/regenerate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          feedbackText: feedbackText.trim(),
+          currentDraft: editedResponse || triage.draftResponse,
+          currentCategory: ticket.category,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.data?.regeneratedDraft) {
+        setEditedResponse(data.data.regeneratedDraft);
+        setHasEverBeenEdited(true);
+        setProofState('not_proofed');
+        setFeedbackText('');
+        setShowFeedback(false);
+      }
+    } catch (err) {
+      console.error('Regenerate failed:', err);
+    } finally {
+      setIsRegenerating(false);
+    }
   };
 
   // 2. Draft Provenance Derivation
@@ -293,6 +328,17 @@ export function ResolutionConsoleMVP({
                     High Attention
                   </span>
                 )}
+                {customer.shopifyOrderCount && customer.shopifyOrderCount > 0 ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-label text-[9px] font-bold uppercase tracking-wider border border-emerald-100">
+                    <span className="material-symbols-outlined !text-[12px]">verified</span>
+                    Shopify Customer
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500 font-label text-[9px] font-bold uppercase tracking-wider border border-zinc-200">
+                    <span className="material-symbols-outlined !text-[12px]">person_add</span>
+                    New Contact
+                  </span>
+                )}
               </div>
             </div>
 
@@ -374,7 +420,7 @@ export function ResolutionConsoleMVP({
                 {ticket.waitingMinutes !== undefined && (
                   <div className="flex justify-between items-center">
                     <span className="font-body text-xs text-zinc-500 font-medium">Wait Time</span>
-                    <span className="font-body text-[13px] font-medium text-zinc-900">{ticket.waitingMinutes} min</span>
+                    <span className="font-body text-[13px] font-medium text-zinc-900">{formatWaitTime(ticket.waitingMinutes)}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">
@@ -565,9 +611,12 @@ export function ResolutionConsoleMVP({
                   <span className="material-symbols-outlined !text-[32px] text-green-600">mark_email_read</span>
                 </div>
                 <div>
-                  <h3 className="font-headline text-lg font-semibold text-zinc-900 mb-1">Response Dispatched</h3>
-                  <p className="font-body text-sm text-zinc-500 max-w-[280px] leading-relaxed">
-                    Logged and sent. The email will appear in Outlook Sent Items shortly.
+                  <h3 className="font-headline text-lg font-semibold text-zinc-900 mb-1">Response Sent</h3>
+                  <p className="font-body text-sm text-zinc-600 mt-1">
+                    Sent via info@sagitine.com at {new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  <p className="font-body text-xs text-zinc-400 mt-1">
+                    Delivery confirmed — saved to Sent Items and send audit
                   </p>
                 </div>
                 <button
@@ -689,18 +738,62 @@ export function ResolutionConsoleMVP({
             )}
           </div>
 
+          {/* FEEDBACK PANEL — below draft, above footer */}
+          {showFeedback && proofState !== 'sent' && (
+            <div className="px-4 py-3 bg-amber-50/40 border-t border-amber-200 flex-shrink-0">
+              <label className="font-label text-[10px] tracking-[0.15em] uppercase font-semibold text-zinc-500 mb-2 block">
+                Tell us what to change
+              </label>
+              <textarea
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="e.g. Wrong category — this is a return request. Rewrite with warmer tone."
+                className="w-full p-3 text-sm font-body border border-outline-variant rounded resize-none focus:ring-1 focus:ring-amber-400 focus:border-amber-400 bg-white"
+                rows={3}
+              />
+              <div className="flex justify-end mt-2 gap-2">
+                <button
+                  onClick={() => { setShowFeedback(false); setFeedbackText(''); }}
+                  className="px-3 py-1.5 text-xs font-label text-zinc-500 hover:text-zinc-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeRegenerate}
+                  disabled={isRegenerating || !feedbackText.trim()}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded text-xs font-label font-semibold bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 transition-colors"
+                >
+                  {isRegenerating ? (
+                    <><span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Regenerating...</>
+                  ) : (
+                    <><span className="material-symbols-outlined !text-[12px]">auto_fix_high</span> Regenerate Draft</>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ACTION FOOTER */}
           <footer className="px-4 py-3 bg-zinc-50 border-t border-outline-variant flex-shrink-0 mt-auto">
             {proofState === 'sent' ? null : (
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-2">
               <button
                 onClick={handleEditToggle}
-                className={`flex-1 px-4 py-2.5 transition-all duration-300 rounded font-label text-[11px] font-bold tracking-wide uppercase relative z-10 ${isEditing
+                className={`flex-1 px-3 py-2.5 transition-all duration-300 rounded font-label text-[10px] font-bold tracking-wide uppercase relative z-10 ${isEditing
                     ? 'bg-zinc-200 text-zinc-800 border-transparent shadow-inner'
                     : 'bg-white border border-outline-variant text-zinc-700 hover:-translate-y-[1px] hover:shadow-sm hover:bg-zinc-50'
                   }`}
               >
-                {isEditing ? 'Done Editing' : 'Edit Response'}
+                {isEditing ? 'Done' : 'Edit'}
+              </button>
+              <button
+                onClick={() => setShowFeedback(!showFeedback)}
+                className={`flex-1 px-3 py-2.5 transition-all duration-300 rounded font-label text-[10px] font-bold tracking-wide uppercase relative z-10 ${showFeedback
+                    ? 'bg-amber-100 text-amber-800 border-transparent shadow-inner'
+                    : 'bg-white border border-outline-variant text-zinc-700 hover:-translate-y-[1px] hover:shadow-sm hover:bg-zinc-50'
+                  }`}
+              >
+                Feedback
               </button>
               <button
                 onClick={handleActionClick}

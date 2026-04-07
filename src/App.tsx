@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { NotificationPill } from "./features/notification-hub/components/NotificationPill";
 import { NotificationHub } from "./features/notification-hub/components/NotificationHub";
+import { BriefPanel } from "./features/notification-hub/components/BriefPanel";
 import { useSagitineSync } from "./hooks/useSagitineSync";
 import { transformApiToHubData, transformApiToConsoleData, transformApiToMvpConsoleData } from "./lib/data-transformer";
 import type { ApiDashboardResponse } from "./lib/data-transformer";
@@ -12,6 +13,7 @@ function App() {
   const pillRef = useRef<HTMLButtonElement>(null);
   const fetchedTicketIds = useRef<Set<string>>(new Set());
   const [isHubOpen, setIsHubOpen] = useState(false);
+  const [isBriefOpen, setIsBriefOpen] = useState(false);
   const [currentView, setCurrentView] = useState<HubView>("LEVEL_1_HUB");
   // Check UI mode explicitly as used in NotificationHub
   const UI_MODE = import.meta.env.VITE_UI_MODE || 'mvp';
@@ -200,6 +202,7 @@ function App() {
             count={activeHubData.metrics.totalOpen}
             urgentCount={activeHubData.metrics.urgentCount}
             onClick={() => setIsHubOpen(true)}
+            onBriefClick={() => setIsBriefOpen(!isBriefOpen)}
             isOpen={isHubOpen}
           />
         )}
@@ -222,6 +225,11 @@ function App() {
             pillRef={pillRef}
           />
         )}
+        {/* BriefPanel - Morning/Evening Brief */}
+        <BriefPanel
+          isOpen={isBriefOpen}
+          onClose={() => setIsBriefOpen(false)}
+        />
       </div>
     </>
   );
