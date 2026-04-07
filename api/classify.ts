@@ -422,6 +422,45 @@ export default async function handler(req: any, res: any) {
 
     const result = classifyEmail(rawBody);
 
+    // 0b. SELF-LEARNING: Check for past category corrections from operator feedback
+    // If operators have corrected the category for this sender or similar emails, override
+    const categoryCorrections = await sql`
+      SELECT suggested_category, COUNT(*) as correction_count
+      FROM operator_feedback
+      WHERE original_category = ${result.category_primary}
+        AND suggested_category IS NOT NULL
+        AND suggested_category != original_category
+        AND created_at > NOW() - INTERVAL '60 days'
+      GROUP BY suggested_category
+      ORDER BY correction_count DESC
+      LIMIT 1
+    `;
+
+    // Also check learning_signals for systematic category misclassification
+    const signalCorrections = await sql`
+      SELECT corrected_category, COUNT(*) as correction_count
+      FROM learning_signals
+      WHERE original_category = ${result.category_primary}
+        AND corrected_category IS NOT NULL
+        AND corrected_category != original_category
+        AND created_at > NOW() - INTERVAL '60 days'
+      GROUP BY corrected_category
+      ORDER BY correction_count DESC
+      LIMIT 1
+    `;
+
+    // Apply correction if we have 2+ consistent corrections from either source
+    const feedbackCorrection = categoryCorrections[0];
+    const signalCorrection = signalCorrections[0];
+
+    if (feedbackCorrection && Number(feedbackCorrection.correction_count) >= 2) {
+      console.log(`[self-learn] Overriding category from "${result.category_primary}" to "${feedbackCorrection.suggested_category}" based on ${feedbackCorrection.correction_count} operator corrections`);
+      result.category_primary = feedbackCorrection.suggested_category;
+    } else if (signalCorrection && Number(signalCorrection.correction_count) >= 2) {
+      console.log(`[self-learn] Overriding category from "${result.category_primary}" to "${signalCorrection.corrected_category}" based on ${signalCorrection.correction_count} learning signals`);
+      result.category_primary = signalCorrection.corrected_category;
+    }
+
     // 1. IDEMPOTENCY / DEDUPLICATION
     const messageId = rawBody.message_id || rawBody.sourceMessageId || null;
     if (messageId) {
