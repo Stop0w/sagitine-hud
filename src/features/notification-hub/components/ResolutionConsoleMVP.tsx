@@ -70,6 +70,12 @@ export function ResolutionConsoleMVP({
   const [feedbackText, setFeedbackText] = useState('');
   const [isRegenerating, setIsRegenerating] = useState(false);
 
+  // Category override state
+  const [selectedCategory, setSelectedCategory] = useState(ticket.category);
+  const [categoryLabel, setCategoryLabel] = useState(ticket.categoryLabel);
+  const [isUpdatingCategory, setIsUpdatingCategory] = useState(false);
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+
   // 1. Invalidation Flow
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
@@ -101,7 +107,7 @@ export function ResolutionConsoleMVP({
         body: JSON.stringify({
           feedbackText: feedbackText.trim(),
           currentDraft: editedResponse || triage.draftResponse,
-          currentCategory: ticket.category,
+          currentCategory: selectedCategory,
         }),
       });
       const data = await res.json();
@@ -116,6 +122,43 @@ export function ResolutionConsoleMVP({
       console.error('Regenerate failed:', err);
     } finally {
       setIsRegenerating(false);
+    }
+  };
+
+  // 1c. Update category via API
+  const CATEGORY_OPTIONS: { value: string; label: string }[] = [
+    { value: 'damaged_missing_faulty', label: 'Damaged & Faulty' },
+    { value: 'shipping_delivery_order_issue', label: 'Shipping & Delivery' },
+    { value: 'return_refund_exchange', label: 'Return & Refund' },
+    { value: 'order_modification_cancellation', label: 'Order Modification' },
+    { value: 'product_usage_guidance', label: 'Product Usage' },
+    { value: 'pre_purchase_question', label: 'Pre-Purchase' },
+    { value: 'stock_availability', label: 'Stock Availability' },
+    { value: 'brand_feedback_general', label: 'Brand Feedback' },
+    { value: 'partnership_wholesale_press', label: 'Partnership & Press' },
+    { value: 'account_billing_payment', label: 'Account & Billing' },
+    { value: 'praise_testimonial_ugc', label: 'Praise & Feedback' },
+    { value: 'spam_solicitation', label: 'Spam & Solicitation' },
+    { value: 'other_uncategorized', label: 'Other' },
+  ];
+
+  const handleCategoryUpdate = async () => {
+    if (selectedCategory === ticket.category) return;
+    setIsUpdatingCategory(true);
+    try {
+      const res = await fetch(`/api/hub/ticket/${ticket.id}/category`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newCategory: selectedCategory }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCategoryLabel(data.data.categoryLabel);
+      }
+    } catch (err) {
+      console.error('Category update failed:', err);
+    } finally {
+      setIsUpdatingCategory(false);
     }
   };
 
@@ -273,7 +316,7 @@ export function ResolutionConsoleMVP({
               arrow_back
             </span>
             <span className="font-label text-[10px] tracking-[0.2em] uppercase font-semibold">
-              QUEUE <span className="text-zinc-400 mx-1">&gt;</span> {ticket.categoryLabel.toUpperCase()} <span className="text-zinc-400 mx-1">&gt;</span> {displayName.toUpperCase().slice(0, 15)}
+              QUEUE <span className="text-zinc-400 mx-1">&gt;</span> {categoryLabel.toUpperCase()} <span className="text-zinc-400 mx-1">&gt;</span> {displayName.toUpperCase().slice(0, 15)}
             </span>
           </button>
         </div>
@@ -415,7 +458,7 @@ export function ResolutionConsoleMVP({
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="font-body text-xs text-zinc-500 font-medium">Category</span>
-                  <span className="font-body text-[13px] font-medium text-zinc-900">{ticket.categoryLabel}</span>
+                  <span className="font-body text-[13px] font-medium text-zinc-900">{categoryLabel}</span>
                 </div>
                 {ticket.waitingMinutes !== undefined && (
                   <div className="flex justify-between items-center">
@@ -741,6 +784,53 @@ export function ResolutionConsoleMVP({
           {/* FEEDBACK PANEL — below draft, above footer */}
           {showFeedback && proofState !== 'sent' && (
             <div className="px-4 py-3 bg-amber-50/40 border-t border-amber-200 flex-shrink-0">
+              {/* CATEGORY SECTION */}
+              <label className="font-label text-[10px] tracking-[0.15em] uppercase font-semibold text-zinc-500 mb-2 block">
+                Category
+              </label>
+              <div className="flex items-center gap-2 relative">
+                {/* Custom dropdown — opens upward */}
+                <div className="flex-grow relative">
+                  <button
+                    type="button"
+                    onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-sm font-body bg-white border border-outline-variant rounded hover:border-zinc-400 transition-colors text-left"
+                  >
+                    <span className="truncate">{CATEGORY_OPTIONS.find(c => c.value === selectedCategory)?.label || selectedCategory}</span>
+                    <span className="material-symbols-outlined !text-[16px] text-zinc-400 ml-2">{categoryDropdownOpen ? 'expand_less' : 'expand_more'}</span>
+                  </button>
+                  {categoryDropdownOpen && (
+                    <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-outline-variant rounded shadow-lg max-h-[260px] overflow-y-auto z-50">
+                      {CATEGORY_OPTIONS.map((cat) => (
+                        <button
+                          key={cat.value}
+                          onClick={() => { setSelectedCategory(cat.value); setCategoryDropdownOpen(false); }}
+                          className={`w-full text-left px-3 py-2 text-sm font-body hover:bg-zinc-50 transition-colors ${
+                            selectedCategory === cat.value ? 'bg-amber-50 text-amber-800 font-medium' : 'text-zinc-700'
+                          }`}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={handleCategoryUpdate}
+                  disabled={isUpdatingCategory || selectedCategory === ticket.category}
+                  className="flex-shrink-0 px-4 py-2 rounded text-xs font-label font-semibold bg-zinc-800 text-white hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isUpdatingCategory ? 'Updating...' : 'Update'}
+                </button>
+              </div>
+              {selectedCategory !== ticket.category && !isUpdatingCategory && (
+                <p className="font-label text-[9px] text-amber-600 mt-1">Category will be updated and stored for self-learning</p>
+              )}
+
+              {/* Separator */}
+              <div className="border-t border-amber-200/60 my-3" />
+
+              {/* TELL US WHAT TO CHANGE SECTION */}
               <label className="font-label text-[10px] tracking-[0.15em] uppercase font-semibold text-zinc-500 mb-2 block">
                 Tell us what to change
               </label>

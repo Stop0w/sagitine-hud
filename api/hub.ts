@@ -1006,6 +1006,75 @@ Write a complete revised email response incorporating the operator's feedback. R
 }
 
 // ============================================================================
+// POST /api/hub/ticket/:id/category - Update ticket category
+// ============================================================================
+
+/**
+ * Operator corrects the AI-assigned category via the Feedback panel dropdown.
+ * Updates triage_results.category_primary and stores a learning signal in
+ * operator_feedback so classify.ts can self-correct in future.
+ */
+async function updateTicketCategory(req: any, res: any) {
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const ticketId = url.pathname.split('/').slice(0, -1).pop();
+
+    if (!ticketId) {
+      return res.status(400).json({ success: false, error: 'Missing ticket ID', timestamp: new Date().toISOString() });
+    }
+
+    const { newCategory } = req.body || {};
+    if (!newCategory) {
+      return res.status(400).json({ success: false, error: 'newCategory is required', timestamp: new Date().toISOString() });
+    }
+
+    const sql = neon(process.env.DATABASE_URL!);
+
+    // Get current category before update
+    const currentRows = await sql`
+      SELECT tr.category_primary, tr.id as triage_id
+      FROM tickets t
+      JOIN triage_results tr ON t.triage_result_id = tr.id
+      WHERE t.id = ${ticketId}
+      LIMIT 1
+    `;
+
+    if (currentRows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Ticket not found', timestamp: new Date().toISOString() });
+    }
+
+    const oldCategory = currentRows[0].category_primary;
+    const triageId = currentRows[0].triage_id;
+
+    // Update triage_results with new category
+    await sql`
+      UPDATE triage_results SET category_primary = ${newCategory} WHERE id = ${triageId}
+    `;
+
+    // Store learning signal for self-improvement
+    if (oldCategory !== newCategory) {
+      await sql`
+        INSERT INTO operator_feedback (ticket_id, feedback_text, original_category, suggested_category, original_draft, regenerated_draft)
+        VALUES (${ticketId}, ${'Category corrected by operator'}, ${oldCategory}, ${newCategory}, NULL, NULL)
+      `;
+      await sql`
+        INSERT INTO learning_signals (ticket_id, signal_type, original_category, corrected_category)
+        VALUES (${ticketId}, 'category_correction', ${oldCategory}, ${newCategory})
+      `;
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: { oldCategory, newCategory, categoryLabel: getCategoryLabel(newCategory) },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error('POST /api/hub/ticket/:id/category error:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Unknown error', timestamp: new Date().toISOString() });
+  }
+}
+
+// ============================================================================
 // POST /api/hub/ticket/:id/resolve - Manual Resolution (Handled in Outlook)
 // ============================================================================
 
@@ -1437,6 +1506,11 @@ export default async function handler(req: any, res: any) {
   // POST /api/hub/ticket/:id/proof - Real proof endpoint
   if (req.method === 'POST' && pathname.match(/^\/api\/hub\/ticket\/[^/]+\/proof$/)) {
     return proofTicketDraft(req, res);
+  }
+
+  // POST /api/hub/ticket/:id/category - Update ticket category
+  if (req.method === 'POST' && pathname.match(/^\/api\/hub\/ticket\/[^/]+\/category$/)) {
+    return updateTicketCategory(req, res);
   }
 
   // POST /api/hub/ticket/:id/regenerate - Operator feedback draft regeneration
