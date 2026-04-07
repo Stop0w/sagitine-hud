@@ -1111,6 +1111,45 @@ async function getGraphToken(): Promise<string> {
   return data.access_token;
 }
 
+/**
+ * Reply to an existing message via Graph API.
+ * Uses POST /users/{sender}/messages/{messageId}/reply which:
+ * - Threads the reply into the original conversation
+ * - Auto-sets In-Reply-To and References headers
+ * - Preserves the full email thread in the recipient's inbox
+ */
+async function replyViaGraph(
+  token: string,
+  senderEmail: string,
+  originalMessageId: string,
+  htmlBody: string
+): Promise<void> {
+  const response = await fetch(
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(senderEmail)}/messages/${encodeURIComponent(originalMessageId)}/reply`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: {
+          body: { contentType: 'HTML', content: htmlBody },
+        },
+        comment: '',
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Graph reply error (${response.status}): ${err}`);
+  }
+}
+
+/**
+ * Fallback: send as a new message if original message ID is unavailable.
+ */
 async function sendViaGraph(
   token: string,
   senderEmail: string,
@@ -1171,6 +1210,7 @@ async function dispatchTicket(req: any, res: any) {
         t.approved_at, t.created_at,
         tr.reply_body, tr.confidence, tr.category_primary, tr.reply_subject,
         ie.from_email, ie.from_name, ie.subject, ie.source_thread_id,
+        ie.source_message_id,
         ie.body_html as original_body_html,
         ie.received_at as email_received_at
       FROM tickets t
@@ -1199,22 +1239,33 @@ async function dispatchTicket(req: any, res: any) {
     }
 
     const graphToken = await getGraphToken();
-    // Re-append the original inbound email as a quoted thread.
-    // htmlToPlainText() strips <hr><blockquote> so the operator only edits the reply body.
-    // We restore it here using the raw body_html from inbound_emails so Outlook shows the full thread.
-    // The From/Sent/To/Subject header block matches what Outlook generates natively.
-    let htmlToSend = final_message_sent;
-    if (ctx.original_body_html) {
-      const sentDate = new Date(ctx.email_received_at).toLocaleString('en-AU', {
-        day: 'numeric', month: 'long', year: 'numeric',
-        hour: 'numeric', minute: '2-digit', hour12: true
-      });
-      const replyHeader = `<div style="padding:4px 0"><b>From:</b> ${ctx.from_name || ctx.from_email} &lt;${ctx.from_email}&gt;<br><b>Sent:</b> ${sentDate}<br><b>To:</b> info &lt;${senderEmail}&gt;<br><b>Subject:</b> ${ctx.subject}<br></div>`;
-      htmlToSend += `<br><br><hr style="display:inline-block;width:98%">${replyHeader}<blockquote style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">${ctx.original_body_html}</blockquote>`;
+
+    // Wrap the operator's final message in an HTML envelope
+    const htmlToSend = `<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body>${final_message_sent}</body></html>`;
+
+    // Use Graph Reply API if we have the original Outlook message ID.
+    // This threads the reply into the original conversation automatically:
+    // - Sets In-Reply-To / References headers
+    // - Adds "Re:" subject prefix
+    // - Includes the full conversation thread
+    // - Appears as a reply in the customer's inbox
+    // Falls back to sendMail (new email) if source_message_id is unavailable.
+    if (ctx.source_message_id) {
+      await replyViaGraph(graphToken, senderEmail, ctx.source_message_id, htmlToSend);
+    } else {
+      // Fallback: no original message ID — send as new email with quoted original
+      let fallbackHtml = final_message_sent;
+      if (ctx.original_body_html) {
+        const sentDate = new Date(ctx.email_received_at).toLocaleString('en-AU', {
+          day: 'numeric', month: 'long', year: 'numeric',
+          hour: 'numeric', minute: '2-digit', hour12: true
+        });
+        const replyHeader = `<div style="padding:4px 0"><b>From:</b> ${ctx.from_name || ctx.from_email} &lt;${ctx.from_email}&gt;<br><b>Sent:</b> ${sentDate}<br><b>To:</b> info &lt;${senderEmail}&gt;<br><b>Subject:</b> ${ctx.subject}<br></div>`;
+        fallbackHtml += `<br><br><hr style="display:inline-block;width:98%">${replyHeader}<blockquote style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">${ctx.original_body_html}</blockquote>`;
+      }
+      const wrappedFallback = `<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body>${fallbackHtml}</body></html>`;
+      await sendViaGraph(graphToken, senderEmail, ctx.from_email, ctx.from_name || '', replySubject, wrappedFallback);
     }
-    // Wrap in HTML envelope for Outlook compatibility
-    htmlToSend = `<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body>${htmlToSend}</body></html>`;
-    await sendViaGraph(graphToken, senderEmail, ctx.from_email, ctx.from_name || '', replySubject, htmlToSend);
 
     // ── 4. UPDATE TICKET ─────────────────────────────────────────────────────
     await sql`
