@@ -112,11 +112,16 @@ export function ResolutionConsoleMVP({
       });
       const data = await res.json();
       if (data.success && data.data?.regeneratedDraft) {
-        setEditedResponse(data.data.regeneratedDraft);
+        const newDraft = data.data.regeneratedDraft;
+        setEditedResponse(newDraft);
         setHasEverBeenEdited(true);
         setProofState('not_proofed');
+        setProofResult(null);
         setFeedbackText('');
         setShowFeedback(false);
+        setIsEditing(true); // Switch to edit mode so the new draft is immediately visible
+      } else {
+        console.error('Regenerate returned unexpected data:', data);
       }
     } catch (err) {
       console.error('Regenerate failed:', err);
