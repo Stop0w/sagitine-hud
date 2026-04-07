@@ -1343,7 +1343,7 @@ async function dispatchTicket(req: any, res: any) {
           sent_at     = NOW(),
           status      = 'approved',
           human_edited      = true,
-          human_edited_body = ${htmlToSend}
+          human_edited_body = ${wrappedHtml}
       WHERE id = ${ticketId}
     `;
 
@@ -1365,7 +1365,7 @@ async function dispatchTicket(req: any, res: any) {
       ) VALUES (
         ${ticketId},
         ${ctx.reply_body || ''},
-        ${htmlToSend},
+        ${wrappedHtml},
         ${ctx.confidence},
         ${true},
         ${!!recentProof},
