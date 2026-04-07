@@ -912,13 +912,14 @@ async function regenerateTicketDraft(req: any, res: any) {
 
     // Fetch gold responses for the (possibly corrected) category
     const goldResponses = await sql`
-      SELECT response_text FROM gold_responses
+      SELECT body_template FROM gold_responses
       WHERE category = ${effectiveCategory}
-      ORDER BY created_at DESC LIMIT 3
+        AND is_active = true
+      ORDER BY use_count DESC LIMIT 3
     `;
 
     const goldContext = goldResponses.length > 0
-      ? `\n\nAPPROVED RESPONSE EXAMPLES FOR THIS CATEGORY:\n${goldResponses.map((g: any) => g.response_text).join('\n---\n')}`
+      ? `\n\nAPPROVED RESPONSE EXAMPLES FOR THIS CATEGORY:\n${goldResponses.map((g: any) => g.body_template).join('\n---\n')}`
       : '';
 
     // Fetch recent learning signals for this category (self-learning context)
