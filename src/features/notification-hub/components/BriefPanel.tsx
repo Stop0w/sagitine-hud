@@ -8,6 +8,12 @@ interface BriefTicket {
   urgency: string;
   category: string;
   waitingMinutes: number;
+  sentAt?: string;
+}
+
+interface OldestUnanswered {
+  customerName: string;
+  waitingMinutes: number;
 }
 
 interface MorningBriefData {
@@ -15,6 +21,8 @@ interface MorningBriefData {
   totalOpen: number;
   urgentCount: number;
   newSinceYesterday: number;
+  oldestUnanswered: OldestUnanswered | null;
+  aiSummary: string;
 }
 
 interface EveningBriefData {
@@ -23,6 +31,7 @@ interface EveningBriefData {
   stillOpen: BriefTicket[];
   stillOpenCount: number;
   newArrivedToday: number;
+  aiSummary: string;
 }
 
 interface BriefPanelProps {
@@ -54,10 +63,32 @@ function urgencyBadgeClasses(urgency: string): string {
   }
 }
 
+function getDefaultTab(): BriefTab {
+  const now = new Date();
+  // Convert to AEST (UTC+10) — rough check: if UTC hour + 10 >= 14, it's afternoon in Sydney
+  const aestHour = (now.getUTCHours() + 10) % 24;
+  return aestHour >= 14 ? 'evening' : 'morning';
+}
+
+function formatBriefDate(): string {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-AU', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Australia/Sydney',
+  });
+  return formatter.format(now) + ' AEST';
+}
+
 type BriefTab = 'morning' | 'evening';
 
 export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState<BriefTab>('morning');
+  const [activeTab, setActiveTab] = useState<BriefTab>(getDefaultTab());
   const [morningData, setMorningData] = useState<MorningBriefData | null>(null);
   const [eveningData, setEveningData] = useState<EveningBriefData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -65,6 +96,9 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (!isOpen) return;
+
+    // Reset to time-appropriate tab each time panel opens
+    setActiveTab(getDefaultTab());
 
     const controller = new AbortController();
 
@@ -100,6 +134,22 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
     return () => controller.abort();
   }, [isOpen]);
 
+  const renderAiSummary = (summary: string) => {
+    if (!summary) return null;
+    return (
+      <div className="mx-4 my-3 px-3 py-2.5 bg-zinc-50 border border-zinc-200">
+        <div className="flex items-start gap-2">
+          <span className="material-symbols-outlined !text-[14px] text-zinc-400 mt-0.5 shrink-0">
+            auto_awesome
+          </span>
+          <p className="font-body text-[12px] leading-relaxed text-zinc-600">
+            {summary}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   const renderTicketRow = (ticket: BriefTicket, icon?: string) => (
     <div
       key={ticket.id}
@@ -120,12 +170,50 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <span
-          className={`font-label text-[9px] tracking-[0.1em] uppercase font-semibold px-2 py-0.5 rounded-full ${urgencyBadgeClasses(ticket.urgency)}`}
+          className={`font-label text-[9px] tracking-[0.1em] uppercase font-semibold px-2 py-0.5 ${urgencyBadgeClasses(ticket.urgency)}`}
         >
           {ticket.urgency}
         </span>
         <span className="font-label text-[10px] tracking-wide text-zinc-400 whitespace-nowrap">
-          {formatWaitTime(ticket.waitingMinutes)}
+          {ticket.sentAt
+            ? new Date(ticket.sentAt).toLocaleTimeString('en-AU', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+                timeZone: 'Australia/Sydney',
+              })
+            : formatWaitTime(ticket.waitingMinutes)}
+        </span>
+      </div>
+    </div>
+  );
+
+  const renderSentTicketRow = (ticket: BriefTicket) => (
+    <div
+      key={ticket.id}
+      className="flex items-center gap-3 px-4 py-3 border-b border-zinc-100 last:border-b-0 hover:bg-zinc-50 transition-colors"
+    >
+      <span className="material-symbols-outlined text-[18px] text-green-600 shrink-0">
+        check_circle
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="font-body text-[13px] font-medium text-zinc-800 truncate">
+          {ticket.customerName}
+        </p>
+        <p className="font-body text-[11px] text-zinc-400 truncate">
+          {ticket.subject}
+        </p>
+      </div>
+      <div className="shrink-0">
+        <span className="font-label text-[10px] tracking-wide text-zinc-400 whitespace-nowrap">
+          {ticket.sentAt
+            ? `Sent ${new Date(ticket.sentAt).toLocaleTimeString('en-AU', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+                timeZone: 'Australia/Sydney',
+              })}`
+            : ''}
         </span>
       </div>
     </div>
@@ -159,13 +247,30 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
               {morningData.newSinceYesterday}
             </p>
             <p className="font-label text-[10px] tracking-[0.15em] uppercase font-semibold text-zinc-500">
-              New
+              New Overnight
             </p>
           </div>
         </div>
 
+        {/* AI Summary */}
+        {renderAiSummary(morningData.aiSummary)}
+
+        {/* Oldest Unanswered Banner */}
+        {morningData.oldestUnanswered && morningData.oldestUnanswered.waitingMinutes > 120 && (
+          <div className="flex items-center gap-2 mx-4 mb-2 px-3 py-2 bg-orange-50 border border-orange-200">
+            <span className="material-symbols-outlined !text-[16px] text-orange-500 shrink-0">
+              warning
+            </span>
+            <p className="font-body text-[12px] text-zinc-700">
+              <span className="font-semibold">Oldest unanswered:</span>{' '}
+              {morningData.oldestUnanswered.customerName} —{' '}
+              {formatWaitTime(morningData.oldestUnanswered.waitingMinutes)}
+            </p>
+          </div>
+        )}
+
         {/* Section Label */}
-        <div className="px-4 pt-4 pb-2">
+        <div className="px-4 pt-3 pb-2">
           <p className="font-label text-[10px] tracking-[0.15em] uppercase font-semibold text-zinc-500">
             Needs Response
           </p>
@@ -223,8 +328,11 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
+        {/* AI Summary */}
+        {renderAiSummary(eveningData.aiSummary)}
+
         {/* Actioned Today */}
-        <div className="px-4 pt-4 pb-2">
+        <div className="px-4 pt-3 pb-2">
           <p className="font-label text-[10px] tracking-[0.15em] uppercase font-semibold text-zinc-500">
             Actioned Today
           </p>
@@ -237,7 +345,7 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
               </p>
             </div>
           ) : (
-            eveningData.actionedToday.map((t) => renderTicketRow(t, 'check_circle'))
+            eveningData.actionedToday.map((t) => renderSentTicketRow(t))
           )}
         </div>
 
@@ -270,10 +378,10 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.97 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="fixed bottom-32 right-10 z-[100] w-[400px] max-h-[600px] bg-white rounded-lg border border-outline-variant shadow-[0_32px_64px_-12px_rgba(95,94,97,0.12)] flex flex-col"
+          className="fixed bottom-32 right-10 z-[100] w-[400px] max-h-[600px] bg-white border border-outline-variant shadow-[0_32px_64px_-12px_rgba(95,94,97,0.12)] flex flex-col"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
+          <div className="flex items-center justify-between px-4 pt-4 pb-1">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[20px] text-zinc-600">
                 summarize
@@ -284,7 +392,7 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
             </div>
             <button
               onClick={onClose}
-              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors"
+              className="w-7 h-7 flex items-center justify-center hover:bg-zinc-100 transition-colors"
               aria-label="Close brief panel"
             >
               <span className="material-symbols-outlined text-[18px] text-zinc-500">
@@ -293,13 +401,20 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
             </button>
           </div>
 
+          {/* Date Line */}
+          <div className="px-4 pb-2">
+            <p className="font-body text-[11px] text-zinc-400 tracking-wide">
+              {formatBriefDate()}
+            </p>
+          </div>
+
           {/* Tab Switcher */}
-          <div className="flex mx-4 mb-2 bg-zinc-100 rounded-full p-0.5">
+          <div className="flex mx-4 mb-2 bg-zinc-100 p-0.5">
             {(['morning', 'evening'] as BriefTab[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-1.5 rounded-full font-label text-[11px] tracking-[0.1em] uppercase font-semibold transition-all ${
+                className={`flex-1 py-1.5 font-label text-[11px] tracking-[0.1em] uppercase font-semibold transition-all ${
                   activeTab === tab
                     ? 'bg-white text-zinc-800 shadow-sm'
                     : 'text-zinc-400 hover:text-zinc-600'
