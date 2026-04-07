@@ -52,11 +52,11 @@ SAGITINE BRAND TOV COMPLIANCE:
 13. Structure: Short paragraphs, direct next step, ownership language, concise explanation
 
 IMPORTANT RULES:
-- Keep edits minimal and faithful to original intent
+- Fix EVERY error — do not skip or minimise issues
 - Do NOT invent refunds, policies, or operational actions not already present
 - Do NOT add apologies (Sagitine tone: "Thank you for reaching out" not "I'm sorry")
-- Preserve the signature "Warm regards, Heidi x"
-- Apply deterministic fixes for obvious TOV violations (terminology, apologies, casual language)
+- The sign-off "Warm regards, Heidi x" must appear exactly ONCE at the very end
+- Apply deterministic fixes for all TOV violations (terminology, apologies, casual language, duplicates)
 `;
 }
 
@@ -676,27 +676,48 @@ async function proofTicketDraft(req: any, res: any) {
     }
 
     // Build TOV-aware proofing prompt for Claude Haiku
-    const proofPrompt = `You are an editorial proofreader for Sagitine customer service responses.
+    const proofPrompt = `You are a strict editorial proofreader for Sagitine, a premium Australian brand. Your job is to find and FIX every error in this email draft. Do not be lenient. Do not skip issues.
 
 CONTEXT:
 - Customer inquiry: ${ticketData.customer_intent_summary?.substring(0, 200)}
 - Original subject: ${ticketData.subject}
 
-CURRENT DRAFT TO PROOF:
+CURRENT DRAFT TO PROOF (analyse every line carefully):
 ${draftText}
 
-- CRITICAL: Check for duplicate sign-offs (e.g. "Warm regards, Heidi x" appearing more than once). If found, flag as type "duplication", severity "high".
-${generateTOVProofingChecklist()}
+YOUR TASK:
+1. Read the entire draft line by line.
+2. Find ALL errors: spelling, grammar, duplicate content, tone issues, brand violations.
+3. Produce a correctedDraft that FIXES every issue you found.
+4. List every issue in the suggestions array — do not silently fix without reporting.
+
+CRITICAL CHECKS (you MUST catch these):
+- DUPLICATE SIGN-OFFS: If "Warm regards" or "Heidi x" appears more than once, this is a HIGH severity error. Remove ALL duplicates — the sign-off must appear exactly ONCE at the very end.
+- DUPLICATE PARAGRAPHS: If any sentence or paragraph is repeated, remove the duplicate.
+- SPELLING & GRAMMAR: Fix every error. Use Australian English (colour, optimise, organise).
+- APOLOGY LANGUAGE: Replace "I'm sorry", "We apologise", "Unfortunately" with Sagitine phrasing ("Thank you for letting me know", "Thank you for reaching out").
+- TERMINOLOGY: Replace "drawer", "unit", "item" with "Box" or "Boxes".
+- CASUAL LANGUAGE: Replace "No worries", "Awesome", "Super", "Hey" with premium alternatives.
+- SIGN-OFF FORMAT: The email must end with exactly "Warm regards,\\nHeidi x" — no variations.
+- RISK: Flag any claims about refunds, policies, or promises that seem fabricated.
+
+RULES FOR correctedDraft:
+- You MUST fix every error you find — do not leave errors unfixed.
+- The correctedDraft must be the COMPLETE corrected email, not a partial edit.
+- Do NOT invent new content, refund promises, or policy claims.
+- Do NOT add apologies.
+
+If changesDetected is false, that means you found ZERO issues. Be very sure before returning false.
 
 Return strict JSON only:
 {
-  "correctedDraft": "proofed version with minimal changes",
+  "correctedDraft": "the full corrected email with ALL fixes applied",
   "changesDetected": true/false,
   "suggestions": [
     {
       "type": "grammar|tone|clarity|spelling|risk|duplication|terminology|sign_off|casual",
       "severity": "low|medium|high",
-      "message": "brief explanation"
+      "message": "brief explanation of what was wrong and what you fixed"
     }
   ],
   "summary": {
@@ -711,9 +732,9 @@ Return strict JSON only:
     try {
       // Call Claude Haiku
       const response = await anthropic.messages.create({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
-        temperature: 0.2, // Low temperature for consistent proofing
+        temperature: 0.1, // Very low temperature for strict, deterministic proofing
         messages: [
           {
             role: 'user',
