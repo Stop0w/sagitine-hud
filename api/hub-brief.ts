@@ -262,7 +262,7 @@ async function handleMorningBrief(
           ie.from_name,
           ie.from_email,
           ie.subject,
-          tr.urgency_score,
+          tr.urgency,
           tr.category_primary,
           ie.received_at,
           EXTRACT(EPOCH FROM (now() - ie.received_at)) / 60 AS waiting_minutes
@@ -271,7 +271,7 @@ async function handleMorningBrief(
         JOIN triage_results  tr ON tr.id = t.triage_result_id
         WHERE t.status NOT IN ('archived', 'rejected')
           AND t.send_status != 'sent'
-        ORDER BY tr.urgency_score DESC, ie.received_at ASC
+        ORDER BY tr.urgency DESC, ie.received_at ASC
       `,
       fetchBriefMetrics(sql),
     ]);
@@ -280,8 +280,8 @@ async function handleMorningBrief(
       id: r.ticket_id,
       customerName: r.from_name || r.from_email,
       subject: r.subject,
-      urgency: mapUrgency(Number(r.urgency_score)),
-      urgencyScore: Number(r.urgency_score),
+      urgency: mapUrgency(Number(r.urgency)),
+      urgencyScore: Number(r.urgency),
       category: r.category_primary,
       receivedAt: r.received_at,
       waitingMinutes: Math.round(Number(r.waiting_minutes)),
@@ -366,7 +366,7 @@ async function handleEveningBrief(
           ie.from_name,
           ie.from_email,
           ie.subject,
-          tr.urgency_score,
+          tr.urgency,
           tr.category_primary,
           ie.received_at,
           EXTRACT(EPOCH FROM (now() - ie.received_at)) / 60 AS waiting_minutes
@@ -375,7 +375,7 @@ async function handleEveningBrief(
         JOIN triage_results  tr ON tr.id = t.triage_result_id
         WHERE t.status NOT IN ('archived', 'rejected')
           AND t.send_status != 'sent'
-        ORDER BY tr.urgency_score DESC, ie.received_at ASC
+        ORDER BY tr.urgency DESC, ie.received_at ASC
       `,
       // New arrived today
       sql`
@@ -401,8 +401,8 @@ async function handleEveningBrief(
       id: r.ticket_id,
       customerName: r.from_name || r.from_email,
       subject: r.subject,
-      urgency: mapUrgency(Number(r.urgency_score)),
-      urgencyScore: Number(r.urgency_score),
+      urgency: mapUrgency(Number(r.urgency)),
+      urgencyScore: Number(r.urgency),
       category: r.category_primary,
       receivedAt: r.received_at,
       waitingMinutes: Math.round(Number(r.waiting_minutes)),
