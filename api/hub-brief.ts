@@ -195,6 +195,7 @@ async function generateAiSummary(
 Focus ONLY on: queue health, risks that need attention, anything that could be missed.
 Do NOT cover what was done yesterday or performance metrics — that is the evening brief's job.
 Write 2-4 short sentences. Be direct, operational, no fluff. Use Australian English.
+Do NOT use any markdown formatting (no bold, no asterisks, no headings). Plain text only.
 If the queue is empty, say so warmly and briefly.
 Never use "Unfortunately", "I'm sorry", or "apologise".`;
   } else {
@@ -209,6 +210,7 @@ Never use "Unfortunately", "I'm sorry", or "apologise".`;
 Focus ONLY on: what got done today, performance (response speed, coverage), anything carrying over and why it matters.
 Do NOT cover queue risks or what needs attention tomorrow — that is the morning brief's job.
 Write 2-4 short sentences. Be direct, operational, no fluff. Use Australian English.
+Do NOT use any markdown formatting (no bold, no asterisks, no headings). Plain text only.
 If everything was actioned, acknowledge it positively and briefly.
 Never use "Unfortunately", "I'm sorry", or "apologise".`;
   }

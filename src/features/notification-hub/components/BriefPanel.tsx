@@ -140,6 +140,8 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
 
   const renderAiSummary = (summary: string) => {
     if (!summary) return null;
+    // Strip any markdown bold/italic syntax that Haiku may return
+    const cleaned = summary.replace(/\*{1,3}/g, '').replace(/_{1,3}/g, '');
     return (
       <div className="mx-4 my-3 px-3 py-2.5 bg-zinc-50 border border-zinc-200">
         <div className="flex items-start gap-2">
@@ -147,7 +149,7 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
             auto_awesome
           </span>
           <p className="font-body text-[12px] leading-relaxed text-zinc-600">
-            {summary}
+            {cleaned}
           </p>
         </div>
       </div>
