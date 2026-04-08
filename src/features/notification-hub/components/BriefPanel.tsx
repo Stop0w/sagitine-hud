@@ -93,9 +93,13 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
   const [eveningData, setEveningData] = useState<EveningBriefData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setExpanded(false);
+      return;
+    }
 
     // Reset to time-appropriate tab each time panel opens
     setActiveTab(getDefaultTab());
@@ -378,7 +382,9 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.97 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="fixed bottom-32 right-10 z-[100] w-[400px] max-h-[600px] bg-white border border-outline-variant shadow-[0_32px_64px_-12px_rgba(95,94,97,0.12)] flex flex-col"
+          className={`fixed bottom-32 right-10 z-[100] bg-white border border-outline-variant shadow-[0_32px_64px_-12px_rgba(95,94,97,0.12)] flex flex-col transition-all duration-300 ${
+            expanded ? 'w-[700px] max-h-[80vh]' : 'w-[400px] max-h-[600px]'
+          }`}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 pt-4 pb-1">
@@ -390,15 +396,26 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
                 Daily Brief
               </h2>
             </div>
-            <button
-              onClick={onClose}
-              className="w-7 h-7 flex items-center justify-center hover:bg-zinc-100 transition-colors"
-              aria-label="Close brief panel"
-            >
-              <span className="material-symbols-outlined text-[18px] text-zinc-500">
-                close
-              </span>
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="w-7 h-7 flex items-center justify-center hover:bg-zinc-100 transition-colors"
+                aria-label={expanded ? 'Collapse brief panel' : 'Expand brief panel'}
+              >
+                <span className="material-symbols-outlined text-[18px] text-zinc-500">
+                  {expanded ? 'close_fullscreen' : 'open_in_full'}
+                </span>
+              </button>
+              <button
+                onClick={onClose}
+                className="w-7 h-7 flex items-center justify-center hover:bg-zinc-100 transition-colors"
+                aria-label="Close brief panel"
+              >
+                <span className="material-symbols-outlined text-[18px] text-zinc-500">
+                  close
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Date Line */}
