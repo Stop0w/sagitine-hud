@@ -29,7 +29,7 @@ function plainTextToHtml(text: string): string {
     .join('');
 }
 import type { HubTicketHydration, ProofState, ProofResponse, ProofApiResponse } from '../types/mvp';
-import { ConsoleSharedState } from './ResolutionConsole'; // Kept for the parent Hub interface
+import type { ConsoleSharedState } from '../types';
 
 interface ResolutionConsoleMVPProps {
   data: HubTicketHydration;

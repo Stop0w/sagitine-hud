@@ -36,42 +36,6 @@ export interface QueueTicketItem {
   status: "new" | "triaged" | "drafted" | "review_required" | "sent";
 }
 
-export interface ResolutionConsoleData {
-  ticketId: string;
-  emailId: string;
-  customerName: string;
-  customerEmail: string;
-  customerSocialHandle?: string; // @sarah_j (IG)
-  subject: string;
-  fullMessage: string;
-  categoryId: string;
-  urgency: UrgencyLevel;
-  confidence: number;
-  riskLevel: RiskLevel;
-  aiSummary: string;
-  draftResponse: string;
-  recommendedAction: string;
-  // CRM Data Fields
-  totalContacts: number;
-  thirtyDayVol: number;
-  lastContactDate: string; // ISO date string
-  customerTier: 'VIP' | 'Standard' | 'At Risk';
-  // Timeline for expansion mode
-  timeline?: Array<{
-    date: string;
-    event: string;
-    type: 'order' | 'email' | 'inquiry' | 'support';
-  }>;
-  // Email thread for expansion mode
-  emailThread?: Array<{
-    from: string;
-    date: string;
-    subject: string;
-    body: string;
-    isIncoming: boolean;
-  }>;
-}
-
 export interface HubMetrics {
   totalOpen: number;
   urgentCount: number;
@@ -81,10 +45,12 @@ export interface HubMetrics {
   criticality: CriticalityLevel;
 }
 
-export interface HubData {
-  categories: CategorySummaryItem[];
-  metrics: HubMetrics;
-  queueByCategory: Record<string, QueueTicketItem[]>;
-  consoleByTicketId: Record<string, ResolutionConsoleData>;
-  lastUpdatedAt: string;
+export interface ConsoleSharedState {
+  isEditing: boolean;
+  editedResponse: string;
+  isProofing: boolean;
+  isProofed: boolean;
+  isDismissed: boolean;
+  proofResult?: any;
+  hasEditedAfterProof?: boolean;
 }

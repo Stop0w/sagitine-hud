@@ -5,9 +5,10 @@ import { NotificationPill } from "./features/notification-hub/components/Notific
 import { NotificationHub } from "./features/notification-hub/components/NotificationHub";
 import { BriefPanel } from "./features/notification-hub/components/BriefPanel";
 import { useSagitineSync } from "./hooks/useSagitineSync";
-import { transformApiToHubData, transformApiToConsoleData, transformApiToMvpConsoleData } from "./lib/data-transformer";
+import { transformApiToHubData, transformApiToMvpConsoleData } from "./lib/data-transformer";
 import type { ApiDashboardResponse } from "./lib/data-transformer";
-import type { HubView, ResolutionConsoleData } from "./features/notification-hub/types";
+import type { HubView } from "./features/notification-hub/types";
+import type { HubTicketHydration } from "./features/notification-hub/types/mvp";
 
 function App() {
   const pillRef = useRef<HTMLButtonElement>(null);
@@ -15,12 +16,10 @@ function App() {
   const [isHubOpen, setIsHubOpen] = useState(false);
   const [isBriefOpen, setIsBriefOpen] = useState(false);
   const [currentView, setCurrentView] = useState<HubView>("LEVEL_1_HUB");
-  // Check UI mode explicitly as used in NotificationHub
-  const UI_MODE = import.meta.env.VITE_UI_MODE || 'mvp';
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [consoleDataMap, setConsoleDataMap] = useState<Record<string, ResolutionConsoleData>>({});
+  const [consoleDataMap, setConsoleDataMap] = useState<Record<string, HubTicketHydration>>({});
 
   // Fetch full dashboard data (queue + categories + metrics)
   const { data: apiData, loading, error } = useSagitineSync<ApiDashboardResponse>('/api/hub-dashboard', {
@@ -38,10 +37,8 @@ function App() {
         .then(res => res.json())
         .then(json => {
           if (json.success && json.data) {
-            const transformed = UI_MODE === 'mvp'
-              ? transformApiToMvpConsoleData(json.data)
-              : transformApiToConsoleData(json.data);
-            setConsoleDataMap(prev => ({ ...prev, [activeTicketId]: transformed as any }));
+            const transformed = transformApiToMvpConsoleData(json.data);
+            setConsoleDataMap(prev => ({ ...prev, [activeTicketId]: transformed }));
           }
         })
         .catch(err => {

@@ -1,5 +1,5 @@
 import type { HubMvpData, HubTicketHydration } from '../features/notification-hub/types/mvp';
-import type { CategorySummaryItem, QueueTicketItem, RiskLevel, UrgencyLevel, CriticalityLevel, ResolutionConsoleData } from '../features/notification-hub/types';
+import type { CategorySummaryItem, QueueTicketItem, RiskLevel, UrgencyLevel, CriticalityLevel } from '../features/notification-hub/types';
 
 // ─── API Response Shapes (from /api/hub-dashboard) ───────────────────────────
 // PostgreSQL normalises unquoted aliases to lowercase.
@@ -180,30 +180,6 @@ export function transformApiToHubData(api: ApiDashboardResponse): HubMvpData {
 }
 
 // ─── Transformer for Individual Ticket Console ────────────────────────────────
-export function transformApiToConsoleData(apiItem: any): ResolutionConsoleData {
-  const isHighAttention = !!(apiItem.ishighattentioncustomer || apiItem.isHighAttentionCustomer);
-
-  return {
-    ticketId: apiItem.ticket_id,
-    emailId: apiItem.email_id || apiItem.ticket_id,
-    customerName: apiItem.fromname || apiItem.fromName || apiItem.fromemail || apiItem.fromEmail,
-    customerEmail: apiItem.fromemail || apiItem.fromEmail,
-    customerSocialHandle: apiItem.instagramhandle || apiItem.instagramHandle,
-    subject: apiItem.subject,
-    fullMessage: apiItem.bodyplain || apiItem.bodyPlain,
-    categoryId: apiItem.categoryprimary || apiItem.categoryPrimary,
-    urgency: urgencyIntToLevel(apiItem.urgency),
-    confidence: parseFloat(apiItem.confidence) || 0,
-    riskLevel: (apiItem.risklevel || apiItem.riskLevel) as RiskLevel || 'low',
-    aiSummary: apiItem.customerintentsummary || apiItem.customerIntentSummary || 'No summary available.',
-    draftResponse: apiItem.replybody || apiItem.replyBody || '',
-    recommendedAction: apiItem.recommendednextaction || apiItem.recommendedNextAction || 'Awaiting action...',
-    totalContacts: parseInt(apiItem.totalcontacts || apiItem.totalContacts) || 0,
-    thirtyDayVol: parseInt(apiItem.thirtydayvolume || apiItem.thirtyDayVolume) || 0,
-    lastContactDate: apiItem.lastcontactat || apiItem.lastContactAt || new Date().toISOString(),
-    customerTier: isHighAttention ? 'VIP' : 'Standard',
-  };
-}
 
 export function transformApiToMvpConsoleData(apiItem: any): HubTicketHydration {
   const isHighAttention = !!(apiItem.ishighattentioncustomer || apiItem.isHighAttentionCustomer);
