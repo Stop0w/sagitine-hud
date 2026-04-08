@@ -42,10 +42,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const url = new URL(req.url!, `http://${req.headers.host}`);
   const pathname = url.pathname;
 
+  const skipAi = url.searchParams.get('skip_ai') === 'true';
+
   if (pathname === '/api/hub-brief/morning') {
-    return handleMorningBrief(sql, res);
+    return handleMorningBrief(sql, res, skipAi);
   } else if (pathname === '/api/hub-brief/evening') {
-    return handleEveningBrief(sql, res);
+    return handleEveningBrief(sql, res, skipAi);
   } else {
     return res.status(404).json({
       success: false,
@@ -254,28 +256,32 @@ Never use "Unfortunately", "I'm sorry", or "apologise".`;
 
 async function handleMorningBrief(
   sql: any,
-  res: VercelResponse
+  res: VercelResponse,
+  skipAi: boolean = false
 ) {
   try {
+    // When skip_ai=true, skip metrics (only needed for AI prompt)
+    const ticketsQuery = sql`
+      SELECT
+        t.id              AS ticket_id,
+        ie.from_name,
+        ie.from_email,
+        ie.subject,
+        tr.urgency,
+        tr.category_primary,
+        ie.received_at,
+        EXTRACT(EPOCH FROM (now() - ie.received_at)) / 60 AS waiting_minutes
+      FROM tickets t
+      JOIN inbound_emails  ie ON ie.id = t.email_id
+      JOIN triage_results  tr ON tr.id = t.triage_result_id
+      WHERE t.status NOT IN ('archived', 'rejected')
+        AND t.send_status != 'sent'
+      ORDER BY tr.urgency DESC, ie.received_at ASC
+    `;
+
     const [ticketsRows, metrics] = await Promise.all([
-      sql`
-        SELECT
-          t.id              AS ticket_id,
-          ie.from_name,
-          ie.from_email,
-          ie.subject,
-          tr.urgency,
-          tr.category_primary,
-          ie.received_at,
-          EXTRACT(EPOCH FROM (now() - ie.received_at)) / 60 AS waiting_minutes
-        FROM tickets t
-        JOIN inbound_emails  ie ON ie.id = t.email_id
-        JOIN triage_results  tr ON tr.id = t.triage_result_id
-        WHERE t.status NOT IN ('archived', 'rejected')
-          AND t.send_status != 'sent'
-        ORDER BY tr.urgency DESC, ie.received_at ASC
-      `,
-      fetchBriefMetrics(sql),
+      ticketsQuery,
+      skipAi ? Promise.resolve(null) : fetchBriefMetrics(sql),
     ]);
 
     const needsResponse = ticketsRows.map((r: any) => ({
@@ -306,7 +312,7 @@ async function handleMorningBrief(
       ? needsResponse.reduce((oldest: any, t: any) => t.waitingMinutes > oldest.waitingMinutes ? t : oldest)
       : null;
 
-    const aiSummary = await generateAiSummary('morning', metrics, {
+    const aiSummary = skipAi ? '' : await generateAiSummary('morning', metrics!, {
       totalOpen,
       urgentCount,
       newSinceYesterday,
@@ -343,7 +349,8 @@ async function handleMorningBrief(
 
 async function handleEveningBrief(
   sql: any,
-  res: VercelResponse
+  res: VercelResponse,
+  skipAi: boolean = false
 ) {
   try {
     const [actionedRows, stillOpenRows, newTodayRows, metrics] = await Promise.all([
@@ -386,7 +393,7 @@ async function handleEveningBrief(
         JOIN inbound_emails ie ON ie.id = t.email_id
         WHERE ie.received_at::date = CURRENT_DATE
       `,
-      fetchBriefMetrics(sql),
+      skipAi ? Promise.resolve(null) : fetchBriefMetrics(sql),
     ]);
 
     const actionedToday = actionedRows.map((r: any) => ({
@@ -412,7 +419,7 @@ async function handleEveningBrief(
 
     const newArrivedToday = newTodayRows[0]?.cnt ?? 0;
 
-    const aiSummary = await generateAiSummary('evening', metrics, {
+    const aiSummary = skipAi ? '' : await generateAiSummary('evening', metrics!, {
       actionedCount: actionedToday.length,
       stillOpenCount: stillOpen.length,
       newArrivedToday,

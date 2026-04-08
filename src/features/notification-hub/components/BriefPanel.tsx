@@ -106,13 +106,14 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
 
     const controller = new AbortController();
 
-    async function fetchBriefs() {
+    // Phase 1: Fetch data without AI summary (fast — DB queries only)
+    async function fetchDataFast() {
       setLoading(true);
       setError(null);
       try {
         const [morningRes, eveningRes] = await Promise.all([
-          fetch('/api/hub-brief/morning', { signal: controller.signal }),
-          fetch('/api/hub-brief/evening', { signal: controller.signal }),
+          fetch('/api/hub-brief/morning?skip_ai=true', { signal: controller.signal }),
+          fetch('/api/hub-brief/evening?skip_ai=true', { signal: controller.signal }),
         ]);
 
         if (!morningRes.ok || !eveningRes.ok) {
@@ -133,7 +134,31 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
       }
     }
 
-    fetchBriefs();
+    // Phase 2: Fetch AI summaries in background (slower — includes Haiku call)
+    async function fetchAiSummaries() {
+      try {
+        const [morningRes, eveningRes] = await Promise.all([
+          fetch('/api/hub-brief/morning', { signal: controller.signal }),
+          fetch('/api/hub-brief/evening', { signal: controller.signal }),
+        ]);
+
+        if (!morningRes.ok || !eveningRes.ok) return;
+
+        const morningJson = await morningRes.json();
+        const eveningJson = await eveningRes.json();
+
+        const mData = morningJson.data ?? morningJson;
+        const eData = eveningJson.data ?? eveningJson;
+
+        // Only update the AI summary fields, preserve existing data
+        setMorningData((prev) => prev ? { ...prev, aiSummary: mData.aiSummary } : mData);
+        setEveningData((prev) => prev ? { ...prev, aiSummary: eData.aiSummary } : eData);
+      } catch {
+        // AI summary is non-critical — silently ignore failures
+      }
+    }
+
+    fetchDataFast().then(() => fetchAiSummaries());
 
     return () => controller.abort();
   }, [isOpen]);
@@ -143,7 +168,12 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
     // Strip any markdown bold/italic syntax that Haiku may return
     const cleaned = summary.replace(/\*{1,3}/g, '').replace(/_{1,3}/g, '');
     return (
-      <div className="mx-4 my-3 px-3 py-2.5 bg-zinc-50 border border-zinc-200">
+      <motion.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: 'auto' }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+        className="mx-4 my-3 px-3 py-2.5 bg-zinc-50 border border-zinc-200"
+      >
         <div className="flex items-start gap-2">
           <span className="material-symbols-outlined !text-[14px] text-zinc-400 mt-0.5 shrink-0">
             auto_awesome
@@ -152,7 +182,7 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
             {cleaned}
           </p>
         </div>
-      </div>
+      </motion.div>
     );
   };
 
