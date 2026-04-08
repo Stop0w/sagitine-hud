@@ -173,7 +173,7 @@ async function generateAiSummary(
     `Avg response time today: ${formatWaitTime(metrics.avgResponseTodayMinutes)} (${metrics.sentTodayCount} sent)`,
     `Avg response time last 7 days: ${formatWaitTime(metrics.avgResponse7dMinutes)} (${metrics.sent7dCount} sent)`,
     `Inbound volume today: ${metrics.volumeToday} (7-day avg: ${metrics.volumeAvg7d}/day)`,
-    `Top open categories: ${metrics.topCategories.map(c => `${c.category} (${c.count})`).join(', ') || 'None'}`,
+    `Top open categories: ${metrics.topCategories.map((c: { category: string; count: number }) => `${c.category} (${c.count})`).join(', ') || 'None'}`,
     `Operator corrections this week: ${metrics.correctionCount7d}`,
   ].join('\n');
 
