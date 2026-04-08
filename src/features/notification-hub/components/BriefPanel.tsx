@@ -95,70 +95,70 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
 
+  // Fetch data for a single tab
+  const fetchTabData = async (
+    tab: BriefTab,
+    skipAi: boolean,
+    signal: AbortSignal
+  ) => {
+    const res = await fetch(
+      `/api/hub-brief/${tab}${skipAi ? '?skip_ai=true' : ''}`,
+      { signal }
+    );
+    if (!res.ok) throw new Error('Failed to fetch brief data');
+    const json = await res.json();
+    return json.data ?? json;
+  };
+
   useEffect(() => {
     if (!isOpen) {
       setExpanded(false);
       return;
     }
 
-    // Reset to time-appropriate tab each time panel opens
-    setActiveTab(getDefaultTab());
+    const defaultTab = getDefaultTab();
+    setActiveTab(defaultTab);
 
     const controller = new AbortController();
+    const { signal } = controller;
 
-    // Phase 1: Fetch data without AI summary (fast — DB queries only)
-    async function fetchDataFast() {
+    async function loadBrief() {
       setLoading(true);
       setError(null);
+
       try {
-        const [morningRes, eveningRes] = await Promise.all([
-          fetch('/api/hub-brief/morning?skip_ai=true', { signal: controller.signal }),
-          fetch('/api/hub-brief/evening?skip_ai=true', { signal: controller.signal }),
+        // Phase 1: Fetch active tab data only (single fast call, no AI)
+        const activeData = await fetchTabData(defaultTab, true, signal);
+        if (defaultTab === 'morning') {
+          setMorningData(activeData);
+        } else {
+          setEveningData(activeData);
+        }
+        setLoading(false);
+
+        // Phase 2 (background): Fetch other tab + AI summaries for both
+        const otherTab = defaultTab === 'morning' ? 'evening' : 'morning';
+        const [otherData, activeWithAi] = await Promise.all([
+          fetchTabData(otherTab, false, signal),
+          fetchTabData(defaultTab, false, signal),
         ]);
 
-        if (!morningRes.ok || !eveningRes.ok) {
-          throw new Error('Failed to fetch brief data');
+        if (defaultTab === 'morning') {
+          setMorningData((prev) => prev ? { ...prev, aiSummary: activeWithAi.aiSummary } : activeWithAi);
+          setEveningData(otherData);
+        } else {
+          setEveningData((prev) => prev ? { ...prev, aiSummary: activeWithAi.aiSummary } : activeWithAi);
+          setMorningData(otherData);
         }
-
-        const morningJson = await morningRes.json();
-        const eveningJson = await eveningRes.json();
-
-        setMorningData(morningJson.data ?? morningJson);
-        setEveningData(eveningJson.data ?? eveningJson);
       } catch (err: any) {
         if (err.name !== 'AbortError') {
           setError(err.message || 'Something went wrong');
+          setLoading(false);
         }
-      } finally {
-        setLoading(false);
       }
     }
 
-    // Phase 2: Fetch AI summaries in background (slower — includes Haiku call)
-    async function fetchAiSummaries() {
-      try {
-        const [morningRes, eveningRes] = await Promise.all([
-          fetch('/api/hub-brief/morning', { signal: controller.signal }),
-          fetch('/api/hub-brief/evening', { signal: controller.signal }),
-        ]);
-
-        if (!morningRes.ok || !eveningRes.ok) return;
-
-        const morningJson = await morningRes.json();
-        const eveningJson = await eveningRes.json();
-
-        const mData = morningJson.data ?? morningJson;
-        const eData = eveningJson.data ?? eveningJson;
-
-        // Only update the AI summary fields, preserve existing data
-        setMorningData((prev) => prev ? { ...prev, aiSummary: mData.aiSummary } : mData);
-        setEveningData((prev) => prev ? { ...prev, aiSummary: eData.aiSummary } : eData);
-      } catch {
-        // AI summary is non-critical — silently ignore failures
-      }
-    }
-
-    fetchDataFast().then(() => fetchAiSummaries());
+    loadBrief();
 
     return () => controller.abort();
   }, [isOpen]);
