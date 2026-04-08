@@ -1475,6 +1475,15 @@ export default async function handler(req: any, res: any) {
     return res.status(200).end();
   }
 
+  // Parse JSON body if it arrives as a string (Vercel runtime inconsistency)
+  if (req.method === 'POST' && req.body && typeof req.body === 'string') {
+    try {
+      req.body = JSON.parse(req.body);
+    } catch {
+      return res.status(400).json({ success: false, error: 'Invalid JSON in request body', timestamp: new Date().toISOString() });
+    }
+  }
+
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathname = url.pathname;
 
