@@ -28,6 +28,14 @@ export const NotificationPill = forwardRef<HTMLButtonElement, NotificationPillPr
               e.stopPropagation();
               onBriefClick?.();
             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                onBriefClick?.();
+              }
+            }}
+            tabIndex={0}
             title="Daily Brief"
             className="font-serif italic text-lg text-primary tracking-tighter cursor-pointer w-7 h-7 flex items-center justify-center hover:bg-zinc-100 transition-colors"
             role="button"
@@ -43,15 +51,16 @@ export const NotificationPill = forwardRef<HTMLButtonElement, NotificationPillPr
         {/* Status Text */}
         <div className="flex items-center gap-4">
           {urgentCount > 0 && (
-            <div className="flex items-center gap-1.5">
-              <span className="font-sans text-[11px] font-bold text-tertiary">
-                {urgentCount} Urgent
-              </span>
-              <div className="w-1.5 h-1.5 bg-tertiary rounded-full" />
-            </div>
+            <>
+              <div className="flex items-center gap-1.5">
+                <span className="font-sans text-[11px] font-bold text-tertiary">
+                  {urgentCount} Urgent
+                </span>
+                <div className="w-1.5 h-1.5 bg-tertiary rounded-full" />
+              </div>
+              <div className="h-3 w-[1px] bg-outline-variant" />
+            </>
           )}
-
-          <div className="h-3 w-[1px] bg-outline-variant" />
 
           <div className="flex items-center gap-1.5">
             <span className="font-sans text-[11px] font-medium text-outline">
@@ -72,3 +81,5 @@ export const NotificationPill = forwardRef<HTMLButtonElement, NotificationPillPr
     );
   }
 );
+
+NotificationPill.displayName = "NotificationPill";

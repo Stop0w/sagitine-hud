@@ -63,11 +63,17 @@ function urgencyBadgeClasses(urgency: string): string {
   }
 }
 
+function getSydneyHour(): number {
+  const parts = new Intl.DateTimeFormat('en-AU', {
+    hour: 'numeric',
+    hour12: false,
+    timeZone: 'Australia/Sydney',
+  }).formatToParts(new Date());
+  return Number(parts.find((p) => p.type === 'hour')?.value ?? 0);
+}
+
 function getDefaultTab(): BriefTab {
-  const now = new Date();
-  // Convert to AEST (UTC+10) — rough check: if UTC hour + 10 >= 14, it's afternoon in Sydney
-  const aestHour = (now.getUTCHours() + 10) % 24;
-  return aestHour >= 14 ? 'evening' : 'morning';
+  return getSydneyHour() >= 14 ? 'evening' : 'morning';
 }
 
 function formatBriefDate(): string {
@@ -81,8 +87,9 @@ function formatBriefDate(): string {
     minute: '2-digit',
     hour12: true,
     timeZone: 'Australia/Sydney',
+    timeZoneName: 'short',
   });
-  return formatter.format(now) + ' AEST';
+  return formatter.format(now);
 }
 
 type BriefTab = 'morning' | 'evening';
@@ -135,8 +142,17 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
           setEveningData(activeData);
         }
         setLoading(false);
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          setError(err.message || 'Something went wrong');
+          setLoading(false);
+        }
+        return; // Don't proceed to phase 2 if phase 1 failed
+      }
 
-        // Phase 2 (background): Fetch other tab + AI summaries for both
+      // Phase 2 (background): Fetch other tab + AI summaries for both
+      // Failures here are non-critical — phase 1 data is already displayed
+      try {
         const otherTab = defaultTab === 'morning' ? 'evening' : 'morning';
         const [otherData, activeWithAi] = await Promise.all([
           fetchTabData(otherTab, false, signal),
@@ -150,11 +166,8 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
           setEveningData((prev) => prev ? { ...prev, aiSummary: activeWithAi.aiSummary } : activeWithAi);
           setMorningData(otherData);
         }
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          setError(err.message || 'Something went wrong');
-          setLoading(false);
-        }
+      } catch {
+        // Phase 2 is non-critical — AI summary and other tab silently degrade
       }
     }
 
@@ -165,8 +178,11 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
 
   const renderAiSummary = (summary: string) => {
     if (!summary) return null;
-    // Strip any markdown bold/italic syntax that Haiku may return
-    const cleaned = summary.replace(/\*{1,3}/g, '').replace(/_{1,3}/g, '');
+    // Strip paired markdown bold/italic syntax that Haiku may return
+    // Preserves underscores in emails/slugs by only matching wrapping pairs
+    const cleaned = summary
+      .replace(/\*{1,3}(.+?)\*{1,3}/g, '$1')
+      .replace(/_{1,3}(.+?)_{1,3}/g, '$1');
     return (
       <motion.div
         initial={{ opacity: 0, height: 0 }}
@@ -256,7 +272,13 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
   );
 
   const renderMorning = () => {
-    if (!morningData) return null;
+    if (!morningData) return (
+      <div className="flex items-center justify-center py-12">
+        <span className="material-symbols-outlined text-[24px] text-zinc-300 animate-spin">
+          progress_activity
+        </span>
+      </div>
+    );
 
     return (
       <div className="flex flex-col">
@@ -332,7 +354,13 @@ export const BriefPanel: React.FC<BriefPanelProps> = ({ isOpen, onClose }) => {
   };
 
   const renderEvening = () => {
-    if (!eveningData) return null;
+    if (!eveningData) return (
+      <div className="flex items-center justify-center py-12">
+        <span className="material-symbols-outlined text-[24px] text-zinc-300 animate-spin">
+          progress_activity
+        </span>
+      </div>
+    );
 
     return (
       <div className="flex flex-col">

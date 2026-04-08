@@ -260,27 +260,33 @@ async function handleMorningBrief(
   skipAi: boolean = false
 ) {
   try {
-    // When skip_ai=true, skip metrics (only needed for AI prompt)
-    const ticketsQuery = sql`
-      SELECT
-        t.id              AS ticket_id,
-        ie.from_name,
-        ie.from_email,
-        ie.subject,
-        tr.urgency,
-        tr.category_primary,
-        ie.received_at,
-        EXTRACT(EPOCH FROM (now() - ie.received_at)) / 60 AS waiting_minutes
-      FROM tickets t
-      JOIN inbound_emails  ie ON ie.id = t.email_id
-      JOIN triage_results  tr ON tr.id = t.triage_result_id
-      WHERE t.status NOT IN ('archived', 'rejected')
-        AND t.send_status != 'sent'
-      ORDER BY tr.urgency DESC, ie.received_at ASC
-    `;
-
-    const [ticketsRows, metrics] = await Promise.all([
-      ticketsQuery,
+    // All DB queries run in parallel; metrics skipped when skip_ai=true
+    const [ticketsRows, newSinceYesterdayRows, metrics] = await Promise.all([
+      sql`
+        SELECT
+          t.id              AS ticket_id,
+          ie.from_name,
+          ie.from_email,
+          ie.subject,
+          tr.urgency,
+          tr.category_primary,
+          ie.received_at,
+          EXTRACT(EPOCH FROM (now() - ie.received_at)) / 60 AS waiting_minutes
+        FROM tickets t
+        JOIN inbound_emails  ie ON ie.id = t.email_id
+        JOIN triage_results  tr ON tr.id = t.triage_result_id
+        WHERE t.status NOT IN ('archived', 'rejected')
+          AND t.send_status != 'sent'
+        ORDER BY tr.urgency DESC, ie.received_at ASC
+      `,
+      sql`
+        SELECT COUNT(*)::int AS cnt
+        FROM tickets t
+        JOIN inbound_emails ie ON ie.id = t.email_id
+        WHERE t.status NOT IN ('archived', 'rejected')
+          AND t.send_status != 'sent'
+          AND ie.received_at > now() - interval '24 hours'
+      `,
       skipAi ? Promise.resolve(null) : fetchBriefMetrics(sql),
     ]);
 
@@ -297,15 +303,6 @@ async function handleMorningBrief(
 
     const totalOpen = needsResponse.length;
     const urgentCount = needsResponse.filter((t: any) => t.urgencyScore >= 7).length;
-
-    const newSinceYesterdayRows = await sql`
-      SELECT COUNT(*)::int AS cnt
-      FROM tickets t
-      JOIN inbound_emails ie ON ie.id = t.email_id
-      WHERE t.status NOT IN ('archived', 'rejected')
-        AND t.send_status != 'sent'
-        AND ie.received_at > now() - interval '24 hours'
-    `;
     const newSinceYesterday = newSinceYesterdayRows[0]?.cnt ?? 0;
 
     const oldestUnanswered = needsResponse.length > 0
