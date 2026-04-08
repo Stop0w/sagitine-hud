@@ -1,1 +1,0 @@
-ALTER TABLE "customer_profiles" ADD COLUMN "last_contact_channel" "contact_channel";
